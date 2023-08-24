@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.2">Jekyll</generator><link href="https://example.com/feed.xml" rel="self" type="application/atom+xml" /><link href="https://example.com/" rel="alternate" type="text/html" /><updated>2023-08-24T12:03:03-04:00</updated><id>https://example.com/feed.xml</id><title type="html">LightSpeed</title><subtitle>A simple Jekyll theme</subtitle><author><name>tajacks</name></author><entry><title type="html">Implement a Blind Error-Based SQLMap payload for SQLite</title><link href="https://example.com/web/2023/08/24/implement-blind-sqlite-sqlmap.html" rel="alternate" type="text/html" title="Implement a Blind Error-Based SQLMap payload for SQLite" /><published>2023-08-24T00:00:00-04:00</published><updated>2023-08-24T00:00:00-04:00</updated><id>https://example.com/web/2023/08/24/implement-blind-sqlite-sqlmap</id><content type="html" xml:base="https://example.com/web/2023/08/24/implement-blind-sqlite-sqlmap.html"><![CDATA[<h2 id="context">Context</h2>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.2">Jekyll</generator><link href="https://sokarepo.github.io//feed.xml" rel="self" type="application/atom+xml" /><link href="https://sokarepo.github.io//" rel="alternate" type="text/html" /><updated>2023-08-24T18:34:20+02:00</updated><id>https://sokarepo.github.io//feed.xml</id><title type="html">sokarepo</title><subtitle>A simple Jekyll theme</subtitle><author><name>soka</name></author><entry><title type="html">Implement a Blind Error-Based SQLMap payload for SQLite</title><link href="https://sokarepo.github.io//web/2023/08/24/implement-blind-sqlite-sqlmap.html" rel="alternate" type="text/html" title="Implement a Blind Error-Based SQLMap payload for SQLite" /><published>2023-08-24T00:00:00+02:00</published><updated>2023-08-24T00:00:00+02:00</updated><id>https://sokarepo.github.io//web/2023/08/24/implement-blind-sqlite-sqlmap</id><content type="html" xml:base="https://sokarepo.github.io//web/2023/08/24/implement-blind-sqlite-sqlmap.html"><![CDATA[<h2 id="context">Context</h2>
 
 <p>Back to year 2019, my first HackTheBox box <code class="language-plaintext highlighter-rouge">Intense</code> was released with several steps involved:</p>
 <ul>
@@ -23,19 +23,19 @@ people to think about a new payload. So of course, SQLMap doesn’t work as its 
 
 <p>Here is the vulnerability in the Flask application:</p>
 
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@app.route</span><span class="p">(</span><span class="sh">"</span><span class="s">/submitmessage</span><span class="sh">"</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="sh">"</span><span class="s">POST</span><span class="sh">"</span><span class="p">])</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">@</span><span class="n">app</span><span class="p">.</span><span class="n">route</span><span class="p">(</span><span class="s">"/submitmessage"</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s">"POST"</span><span class="p">])</span>
 <span class="k">def</span> <span class="nf">submitmessage</span><span class="p">():</span>
-    <span class="n">message</span> <span class="o">=</span> <span class="n">request</span><span class="p">.</span><span class="n">form</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="sh">"</span><span class="s">message</span><span class="sh">"</span><span class="p">,</span> <span class="sh">''</span><span class="p">)</span>
-    <span class="k">if</span> <span class="nf">len</span><span class="p">(</span><span class="n">message</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">140</span><span class="p">:</span>
-        <span class="k">return</span> <span class="sh">"</span><span class="s">message too long</span><span class="sh">"</span>
-    <span class="k">if</span> <span class="nf">badword_in_str</span><span class="p">(</span><span class="n">message</span><span class="p">):</span>
-        <span class="k">return</span> <span class="sh">"</span><span class="s">forbidden word in message</span><span class="sh">"</span>
+    <span class="n">message</span> <span class="o">=</span> <span class="n">request</span><span class="p">.</span><span class="n">form</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">"message"</span><span class="p">,</span> <span class="s">''</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">message</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">140</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s">"message too long"</span>
+    <span class="k">if</span> <span class="n">badword_in_str</span><span class="p">(</span><span class="n">message</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">"forbidden word in message"</span>
     <span class="c1"># insert new message in DB
 </span>    <span class="k">try</span><span class="p">:</span>
-        <span class="nf">query_db</span><span class="p">(</span><span class="sh">"</span><span class="s">insert into messages values (</span><span class="sh">'</span><span class="s">%s</span><span class="sh">'</span><span class="s">)</span><span class="sh">"</span> <span class="o">%</span> <span class="n">message</span><span class="p">)</span>
+        <span class="n">query_db</span><span class="p">(</span><span class="s">"insert into messages values ('%s')"</span> <span class="o">%</span> <span class="n">message</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">sqlite3</span><span class="p">.</span><span class="n">Error</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nf">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
-    <span class="k">return</span> <span class="sh">"</span><span class="s">OK</span><span class="sh">"</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s">"OK"</span>
 </code></pre></div></div>
 
 <p><br /></p>
