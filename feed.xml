@@ -1,17 +1,17 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.2">Jekyll</generator><link href="https://sokarepo.github.io//feed.xml" rel="self" type="application/atom+xml" /><link href="https://sokarepo.github.io//" rel="alternate" type="text/html" /><updated>2023-11-17T12:40:41+01:00</updated><id>https://sokarepo.github.io//feed.xml</id><title type="html">sokarepo</title><subtitle>soka offsec notes | Web, Active Directory and Maldev stuff</subtitle><author><name>soka</name></author><entry><title type="html">Create Reflective DLL for Cobalt Strike</title><link href="https://sokarepo.github.io//redteam/2023/10/11/create-reflective-dll-for-cobaltstrike.html" rel="alternate" type="text/html" title="Create Reflective DLL for Cobalt Strike" /><published>2023-10-11T00:00:00+02:00</published><updated>2023-10-11T00:00:00+02:00</updated><id>https://sokarepo.github.io//redteam/2023/10/11/create-reflective-dll-for-cobaltstrike</id><content type="html" xml:base="https://sokarepo.github.io//redteam/2023/10/11/create-reflective-dll-for-cobaltstrike.html"><![CDATA[<h2 id="context">Context</h2>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.2">Jekyll</generator><link href="https://sokarepo.github.io//feed.xml" rel="self" type="application/atom+xml" /><link href="https://sokarepo.github.io//" rel="alternate" type="text/html" /><updated>2023-11-23T20:06:03+01:00</updated><id>https://sokarepo.github.io//feed.xml</id><title type="html">sokarepo</title><subtitle>soka offsec notes | Web, Active Directory and Maldev stuff</subtitle><author><name>soka</name></author><entry><title type="html">Create Reflective DLL for Cobalt Strike</title><link href="https://sokarepo.github.io//redteam/2023/10/11/create-reflective-dll-for-cobaltstrike.html" rel="alternate" type="text/html" title="Create Reflective DLL for Cobalt Strike" /><published>2023-10-11T00:00:00+02:00</published><updated>2023-10-11T00:00:00+02:00</updated><id>https://sokarepo.github.io//redteam/2023/10/11/create-reflective-dll-for-cobaltstrike</id><content type="html" xml:base="https://sokarepo.github.io//redteam/2023/10/11/create-reflective-dll-for-cobaltstrike.html"><![CDATA[<h2 id="context">Context</h2>
 
 <p>This blog post aims to solve a problem I faced when using opensource tooling with Cobalt Strike.</p>
 
 <p>During my security assessments I often rely on tooling developped in Python, C#, Go or C/C++.
 Opensource tools are very often built to produce a PE file that doesn’t fit well on red team engagement as we prefer to avoid uploading and executing file on disk.
-For Python tools, we need a Socks proxy but C2 socks are quite slow as the socks traffic is over the egress C2 traffic of the beacon.</p>
+For Python tools, we need a SOCKS proxy but C2 SOCKS are quite slow as the SOCKS traffic is over the egress C2 traffic of the beacon.</p>
 
 <p>In this blogpost I’m going to show how I ported 2 tools so that they produce a Reflective DLL (RDLL) which could be used in CobaltStrike and executing everything from memory.</p>
 
 <h2 id="golang---revsocks">Golang - revsocks</h2>
 
-<p>To overcome the socks latency issue, I’m using a modified version of <a href="https://github.com/kost/revsocks">revsocks</a>.
-Revsocks is splited in 2 parts: the server and the client. The server listens for incoming connections and starts a socks server when a valid connection is
+<p>To overcome the SOCKS latency issue, I’m using a modified version of <a href="https://github.com/kost/revsocks">revsocks</a>.
+Revsocks is splited in 2 parts: the server and the client. The server listens for incoming connections and starts a SOCKS server when a valid connection is
 established.</p>
 
 <p>Back to 2019, <a href="https://twitter.com/_EthicalChaos_">@<em>EthicalChaos</em></a> made a blogpost about how we can used Golang tooling with Cobalt Strike (<a href="https://ethicalchaos.dev/2020/01/26/weaponizing-your-favorite-go-program-for-cobalt-strike/">Weaponizing your favorite Go program for Cobalt Strike</a>) and released <a href="https://github.com/CCob/goreflect">goreflect</a>, a template to generate a RDLL from a Go project.</p>
@@ -170,7 +170,7 @@ make
 
 <h2 id="coercedpotato-for-privilege-escalation">CoercedPotato for privilege escalation</h2>
 
-<p>During a recent engagement my team mates and I gained RCE on a Windows IIS server (I will make dedicated blogposts on this) and we ended up to get a beacon on the server as a NT Local Service account.</p>
+<p>During a recent engagement my teammates and I gained RCE on a Windows IIS server (I will make dedicated blogposts on this) and we ended up to get a beacon on the server as a NT Local Service account.</p>
 
 <p>We sucessfuly used <a href="https://github.com/BeichenDream/GodPotato">GodPotato</a> through <code class="language-plaintext highlighter-rouge">execute-assembly</code> to get a SYSTEM beacon. However, <code class="language-plaintext highlighter-rouge">execute-assembly</code> can be easily spotted as it loads <code class="language-plaintext highlighter-rouge">CLR.dll</code> in the sacrificial process spawned by Cobalt Strike.</p>
 
