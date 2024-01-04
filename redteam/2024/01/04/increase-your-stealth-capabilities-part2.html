@@ -12,15 +12,15 @@
 <meta property="og:locale" content="en_US" />
 <meta name="description" content="Note: This blog post is the second one of the series Increase your stealth capabilities, make sure to have read the first part." />
 <meta property="og:description" content="Note: This blog post is the second one of the series Increase your stealth capabilities, make sure to have read the first part." />
-<link rel="canonical" href="http://localhost:4000/redteam/2024/01/04/increase-your-stealth-capabilities-part2.html" />
-<meta property="og:url" content="http://localhost:4000/redteam/2024/01/04/increase-your-stealth-capabilities-part2.html" />
+<link rel="canonical" href="https://sokarepo.github.io//redteam/2024/01/04/increase-your-stealth-capabilities-part2.html" />
+<meta property="og:url" content="https://sokarepo.github.io//redteam/2024/01/04/increase-your-stealth-capabilities-part2.html" />
 <meta property="og:site_name" content="sokarepo" />
 <meta property="og:type" content="article" />
 <meta property="article:published_time" content="2024-01-04T00:00:00+01:00" />
 <meta name="twitter:card" content="summary" />
 <meta property="twitter:title" content="Increase your stealth capabilities - part 2" />
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"soka"},"dateModified":"2024-01-04T00:00:00+01:00","datePublished":"2024-01-04T00:00:00+01:00","description":"Note: This blog post is the second one of the series Increase your stealth capabilities, make sure to have read the first part.","headline":"Increase your stealth capabilities - part 2","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/redteam/2024/01/04/increase-your-stealth-capabilities-part2.html"},"url":"http://localhost:4000/redteam/2024/01/04/increase-your-stealth-capabilities-part2.html"}</script>
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"soka"},"dateModified":"2024-01-04T00:00:00+01:00","datePublished":"2024-01-04T00:00:00+01:00","description":"Note: This blog post is the second one of the series Increase your stealth capabilities, make sure to have read the first part.","headline":"Increase your stealth capabilities - part 2","mainEntityOfPage":{"@type":"WebPage","@id":"https://sokarepo.github.io//redteam/2024/01/04/increase-your-stealth-capabilities-part2.html"},"url":"https://sokarepo.github.io//redteam/2024/01/04/increase-your-stealth-capabilities-part2.html"}</script>
 <!-- End Jekyll SEO tag -->
 
 
@@ -79,12 +79,12 @@ In this Part 2, I will show how we can increase our stealth capabilities by usin
 
 <p>In order to evade Elastic EDR yara rules, I followed the following Fortra <a href="https://www.cobaltstrike.com/blog/cobalt-strike-and-yara-can-i-have-your-signature">blog post</a>.</p>
 
-<p>Yara rules are pretty easy to evade when you know them… ElasticEDR rules can be found <a href="https://github.com/elastic/protections-artifacts/blob/main/yara/rules/Windows_Trojan_CobaltStrike.yar">here</a>.</p>
+<p>Yara rules are pretty easy to evade when you know them… Elastic EDR rules can be found <a href="https://github.com/elastic/protections-artifacts/blob/main/yara/rules/Windows_Trojan_CobaltStrike.yar">here</a>.</p>
 
 <p>I used <a href="https://github.com/xforcered/BokuLoader">xforcered/BokuLoader</a> (October+ release) to increase evasion capabilities of the Cobalt Strike beacon.
 This release contains call stack spoofing capabilities that bypass Elastic EDR rules based on call stack analysis. You can learn more about it <a href="https://dtsec.us/2023-09-15-StackSpoofin/">here</a>.</p>
 
-<p>After the User-Defined Reflective Loader included in Cobalt Strike, I made the following changes to the <code class="language-plaintext highlighter-rouge">bokuloader.cna</code> to bypass ElasticEDR yara rules:</p>
+<p>After the User-Defined Reflective Loader included in Cobalt Strike, I made the following changes to the <code class="language-plaintext highlighter-rouge">bokuloader.cna</code> to bypass Elastic EDR yara rules:</p>
 
 <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>sub boku_strrep {
 	local('$beacon_dll');
@@ -104,7 +104,7 @@ This release contains call stack spoofing capabilities that bypass Elastic EDR r
 
 <p>At this point, Elastic EDR should not detect the Cobalt Strike Reflective DLL as <code class="language-plaintext highlighter-rouge">Windows.Trojan.CobaltStrike</code>.</p>
 
-<p>However, ElasticEDR will still alert if malicious bahaviour is detected:</p>
+<p>However, Elastic EDR will still alert if malicious bahaviour is detected:</p>
 <ul>
   <li>Access to LSASS process from unbacked memory</li>
   <li>DLL loading from unbacked memory</li>
