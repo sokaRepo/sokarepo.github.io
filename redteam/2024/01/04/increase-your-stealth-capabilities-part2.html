@@ -10,17 +10,17 @@
 <meta property="og:title" content="Increase your stealth capabilities - part 2" />
 <meta name="author" content="soka" />
 <meta property="og:locale" content="en_US" />
-<meta name="description" content="Recap" />
-<meta property="og:description" content="Recap" />
-<link rel="canonical" href="https://sokarepo.github.io//redteam/2024/01/04/increase-your-stealth-capabilities-part2.html" />
-<meta property="og:url" content="https://sokarepo.github.io//redteam/2024/01/04/increase-your-stealth-capabilities-part2.html" />
+<meta name="description" content="Note: This blog post is the second one of the series Increase your stealth capabilities, make sure to have read the first part." />
+<meta property="og:description" content="Note: This blog post is the second one of the series Increase your stealth capabilities, make sure to have read the first part." />
+<link rel="canonical" href="http://localhost:4000/redteam/2024/01/04/increase-your-stealth-capabilities-part2.html" />
+<meta property="og:url" content="http://localhost:4000/redteam/2024/01/04/increase-your-stealth-capabilities-part2.html" />
 <meta property="og:site_name" content="sokarepo" />
 <meta property="og:type" content="article" />
 <meta property="article:published_time" content="2024-01-04T00:00:00+01:00" />
 <meta name="twitter:card" content="summary" />
 <meta property="twitter:title" content="Increase your stealth capabilities - part 2" />
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"soka"},"dateModified":"2024-01-04T00:00:00+01:00","datePublished":"2024-01-04T00:00:00+01:00","description":"Recap","headline":"Increase your stealth capabilities - part 2","mainEntityOfPage":{"@type":"WebPage","@id":"https://sokarepo.github.io//redteam/2024/01/04/increase-your-stealth-capabilities-part2.html"},"url":"https://sokarepo.github.io//redteam/2024/01/04/increase-your-stealth-capabilities-part2.html"}</script>
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"soka"},"dateModified":"2024-01-04T00:00:00+01:00","datePublished":"2024-01-04T00:00:00+01:00","description":"Note: This blog post is the second one of the series Increase your stealth capabilities, make sure to have read the first part.","headline":"Increase your stealth capabilities - part 2","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/redteam/2024/01/04/increase-your-stealth-capabilities-part2.html"},"url":"http://localhost:4000/redteam/2024/01/04/increase-your-stealth-capabilities-part2.html"}</script>
 <!-- End Jekyll SEO tag -->
 
 
@@ -63,23 +63,25 @@
 </div>
 
 <div class="post-content">
+<p><b><u>Note:</u> This blog post is the second one of the series <i>Increase your stealth capabilities</i>, make sure to have read <a href="/redteam/2024/01/04/increase-your-stealth-capabilities-part1.html">the first part</a>.</b></p>
+
 <h2 id="recap">Recap</h2>
 
 <p>During an engagement my teammates and I compromised a Windows server by uploading a webshell then elevated our privilege to SYSTEM and extracted credentials stored in LSASS.
 <br />
 In Part 1, I replayed the scenario in a lab where an Elastic EDR agent is running and we noticed that a lot of detection raised up.
 <br />
-In this Part 2, I will show how we can increase our stealth capabilities by using open source tool and building our own.</p>
+In this Part 2, I will show how we can increase our stealth capabilities by using open source tools and building our own.</p>
 
 <p><br /></p>
 
 <h2 id="cobalt-strike-modifications">Cobalt Strike modifications</h2>
 
-<p>In order to evade ElasticEDR yara rules, I followed the following Fortra <a href="https://www.cobaltstrike.com/blog/cobalt-strike-and-yara-can-i-have-your-signature">blogpost</a>.</p>
+<p>In order to evade Elastic EDR yara rules, I followed the following Fortra <a href="https://www.cobaltstrike.com/blog/cobalt-strike-and-yara-can-i-have-your-signature">blog post</a>.</p>
 
 <p>Yara rules are pretty easy to evade when you know them… ElasticEDR rules can be found <a href="https://github.com/elastic/protections-artifacts/blob/main/yara/rules/Windows_Trojan_CobaltStrike.yar">here</a>.</p>
 
-<p>I used <a href="https://github.com/xforcered/BokuLoader">BokuLoader</a> (October+ release) to increase evasion capabilities of the Cobalt Strike beacon.
+<p>I used <a href="https://github.com/xforcered/BokuLoader">xforcered/BokuLoader</a> (October+ release) to increase evasion capabilities of the Cobalt Strike beacon.
 This release contains call stack spoofing capabilities that bypass Elastic EDR rules based on call stack analysis. You can learn more about it <a href="https://dtsec.us/2023-09-15-StackSpoofin/">here</a>.</p>
 
 <p>After the User-Defined Reflective Loader included in Cobalt Strike, I made the following changes to the <code class="language-plaintext highlighter-rouge">bokuloader.cna</code> to bypass ElasticEDR yara rules:</p>
@@ -235,16 +237,17 @@ And I got zero detection from Elastic EDR for this step.
 
 <p><br /></p>
 
-<p>Actually there is an universal privilege escalation path when LDAP signature is not enforce (default configuration) on domain controllers but I will make a dedicated blog post on this one later.
+<p>Actually there is an universal privilege escalation path when LDAP signature is not enforced on domain controllers (default configuration) but I will make a dedicated blog post on this one later.
 <br /></p>
 
-<h2 id="privilage-escalation---seimpersonateprivilege">Privilage escalation - SeImpersonatePrivilege</h2>
+<h2 id="privilege-escalation---seimpersonateprivilege">Privilege escalation - SeImpersonatePrivilege</h2>
 
-<p>Few months ago, <a href="https://github.com/Prepouce/CoercedPotato">CoercedPotato</a> was released. CoercedPotato is a C++ program which, like the other Potato exploits, spawn a named pipe (via a RPC interface) to receive a SYSTEM authentication and impersonate it. To coerce the SYSTEM auth, CoercedPotato use MS-EFSR and MS-RPRN functions.</p>
+<p>Few months ago, <a href="https://github.com/Prepouce/CoercedPotato">Prepouce/CoercedPotato</a> was released. CoercedPotato is a C++ program which, like the other Potato exploits, spawn a named pipe (via a RPC interface) to receive a SYSTEM authentication and impersonate it. To coerce the SYSTEM auth, CoercedPotato use MS-EFSR and MS-RPRN functions.</p>
 
-<p>As we don’t want to put and execute anything on the disk, I forked and “converted” CoercedPotato to a Reflective DLL <a href="https://github.com/sokaRepo/CoercedPotatoRDLL">CoercedPotatoRDLL</a>.</p>
+<p>As we don’t want to put and execute anything on the disk, I forked and “converted” CoercedPotato to a Reflective DLL <a href="https://github.com/sokaRepo/CoercedPotatoRDLL">sokaRepo/CoercedPotatoRDLL</a>. You can read about it in a previous <a href="/redteam/2023/10/11/create-reflective-dll-for-cobaltstrike.html" target="_blank">blog post</a>.</p>
 
-<p>When I tested the Reflective DLL, I had the surprise that Elastic EDR recently add a Malicious Bahaviour Detection rule that didn’t exist one or two months before… =)</p>
+<p><br />
+When I tested the Reflective DLL, I had the surprise that Elastic EDR recently added a Malicious Bahaviour Detection rule that didn’t exist one or two months before… =)</p>
 
 <p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20231126114713.png" alt="SeImpersonate detection" /></p>
 
@@ -304,7 +307,7 @@ else
 
 <p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20240102172509.png" alt="new beacon" /></p>
 
-<h2 id="privesc---s4u2self">PrivEsc - S4U2Self</h2>
+<h2 id="privilege-escalation---s4u2self">Privilege escalation - S4U2Self</h2>
 
 <p>Another way to do this is to abuse Kerberos itself.
 As a local service account, when we authenticate with NTLM or Kerberos on another machine, the machine account is used <code class="language-plaintext highlighter-rouge">WEB1$</code>.
@@ -349,7 +352,7 @@ Therefore, the <a href="https://posts.specterops.io/kerberoasting-revisited-d434
 
 <p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20240104105829.png" alt="LSASS denied" /></p>
 
-<p>If we try to use Nanodump, we have the same access issue.</p>
+<p>If we try to use <a href="https://github.com/fortra/nanodump">fortra/nanodump</a>, we have the same access issue.</p>
 
 <p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20240104105810.png" alt="LSASS denied" /></p>
 
@@ -363,7 +366,7 @@ Therefore, the <a href="https://posts.specterops.io/kerberoasting-revisited-d434
 
 <p>Alternatively we can enumerate TGT inside LSA and look for any interesting users (<code class="language-plaintext highlighter-rouge">sadmin</code> is a good candidate in my lab).</p>
 
-<p>To perform the bellow Keberos interactions, I use <a href="https://github.com/RalfHacker/Kerbeus-BOF">Kerbeus-BOF</a> but <a href="https://github.com/wavvs/nanorobeus/">nanorobeus</a> can also be used (Kerbeus-BOF is actually based on nanorobeus).</p>
+<p>To perform the bellow Keberos interactions, I use <a href="https://github.com/RalfHacker/Kerbeus-BOF">RalfHacker/Kerbeus-BOF</a> but <a href="https://github.com/wavvs/nanorobeus/">wavvs/nanorobeus</a> can also be used (Kerbeus-BOF is actually based on nanorobeus).</p>
 
 <p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20240104113937.png" alt="TGT enum" /></p>
 
@@ -387,9 +390,10 @@ Therefore, the <a href="https://posts.specterops.io/kerberoasting-revisited-d434
 
 <p>From here, we can act on behalf of <code class="language-plaintext highlighter-rouge">sadmin</code> user and try to move laterally in the network.
 <br /></p>
+
 <h2 id="conclusion">Conclusion</h2>
 
-<p>In this second part we saw how we can increase our stealth by using amazing open source tools such as BokuLoader.</p>
+<p>In this second part we saw how we can increase our stealth and prevent Elastic EDR to spot us by using amazing open source tools such as BokuLoader.</p>
 
 <p>To avoid executing .NET assembly in memory, we used C++ tool CoercedPotato and modify it to be a Reflective DLL in order to be able to load it in memory with Cobalt Strike.</p>
 

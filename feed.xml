@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.2">Jekyll</generator><link href="https://sokarepo.github.io//feed.xml" rel="self" type="application/atom+xml" /><link href="https://sokarepo.github.io//" rel="alternate" type="text/html" /><updated>2024-01-04T16:01:26+01:00</updated><id>https://sokarepo.github.io//feed.xml</id><title type="html">sokarepo</title><subtitle>soka offsec notes | Web, Active Directory and Maldev stuff</subtitle><author><name>soka</name></author><entry><title type="html">Increase your stealth capabilities - part 1</title><link href="https://sokarepo.github.io//redteam/2024/01/04/increase-your-stealth-capabilities-part1.html" rel="alternate" type="text/html" title="Increase your stealth capabilities - part 1" /><published>2024-01-04T00:00:00+01:00</published><updated>2024-01-04T00:00:00+01:00</updated><id>https://sokarepo.github.io//redteam/2024/01/04/increase-your-stealth-capabilities-part1</id><content type="html" xml:base="https://sokarepo.github.io//redteam/2024/01/04/increase-your-stealth-capabilities-part1.html"><![CDATA[<p>In a recent assessment, my teammates and I were tasked to perform a web security review of several applications with the possibility to perform internal pentest if the opportunity came up.</p>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.2">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2024-01-04T17:49:41+01:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">sokarepo</title><subtitle>soka offsec notes | Web, Active Directory and Maldev stuff</subtitle><author><name>soka</name></author><entry><title type="html">Increase your stealth capabilities - part 1</title><link href="http://localhost:4000/redteam/2024/01/04/increase-your-stealth-capabilities-part1.html" rel="alternate" type="text/html" title="Increase your stealth capabilities - part 1" /><published>2024-01-04T00:00:00+01:00</published><updated>2024-01-04T00:00:00+01:00</updated><id>http://localhost:4000/redteam/2024/01/04/increase-your-stealth-capabilities-part1</id><content type="html" xml:base="http://localhost:4000/redteam/2024/01/04/increase-your-stealth-capabilities-part1.html"><![CDATA[<p>In a recent assessment, my teammates and I were tasked to perform a web security review of several applications with the possibility to perform internal pentest if the opportunity came up.</p>
 
 <p>On one of the application, we successfully uploaded a aspx webshell which executes Windows cmd.
 The engagement didn’t require us to be stealthy and the goal of this blog post is to reproduce our what we did with Elastic EDR watching us.</p>
@@ -60,15 +60,15 @@ The next step of our exploitation was to escalate our privileges from Local Serv
 
 <h2 id="lsass-dump">LSASS dump</h2>
 
-<p>After we gained NT SYSTEM privileges, we launched the built-in mimikatz command to dump credentials from LSASS.</p>
+<p>After we gained SYSTEM privileges, we launched the built-in mimikatz command to dump credentials from LSASS.</p>
 
 <p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20231009144233.png" alt="logonpasswords" />
 <br /></p>
 
-<p>Which raised:</p>
+<p>Which raised alerts:</p>
 <ul>
   <li><code class="language-plaintext highlighter-rouge">LSASS Process Access via Windows API</code></li>
-  <li>Mimikatz detected from memory</li>
+  <li><code class="language-plaintext highlighter-rouge">Memory Threat Detection Alert: Windows.Hacktool.Mimikatz</code></li>
   <li><code class="language-plaintext highlighter-rouge">LSASS Access Attempt from Unbacked Memory</code></li>
 </ul>
 
@@ -78,30 +78,32 @@ The next step of our exploitation was to escalate our privileges from Local Serv
 
 <h2 id="conclusion">Conclusion</h2>
 
-<p>As we can saw, there are plenty opportunities to detect our actions during the different phase of the attack path:</p>
+<p>As we can saw, there are plenty of opportunities to detect our actions during the different phase of the attack path:</p>
 <ul>
   <li>execution of a webshell</li>
   <li>execution of an .NET assembly through execute-assembly</li>
   <li>LSASS dump</li>
 </ul>
 
-<p>In the <a href="https://sokarepo.github.io/redteam/2024/01/04/increase-your-stealth-capabilities-part2.html">next part</a> I will go through each steps again but with detection in mind.</p>]]></content><author><name>soka</name></author><category term="redteam" /><summary type="html"><![CDATA[In a recent assessment, my teammates and I were tasked to perform a web security review of several applications with the possibility to perform internal pentest if the opportunity came up.]]></summary></entry><entry><title type="html">Increase your stealth capabilities - part 2</title><link href="https://sokarepo.github.io//redteam/2024/01/04/increase-your-stealth-capabilities-part2.html" rel="alternate" type="text/html" title="Increase your stealth capabilities - part 2" /><published>2024-01-04T00:00:00+01:00</published><updated>2024-01-04T00:00:00+01:00</updated><id>https://sokarepo.github.io//redteam/2024/01/04/increase-your-stealth-capabilities-part2</id><content type="html" xml:base="https://sokarepo.github.io//redteam/2024/01/04/increase-your-stealth-capabilities-part2.html"><![CDATA[<h2 id="recap">Recap</h2>
+<p>In the <a href="/redteam/2024/01/04/increase-your-stealth-capabilities-part2.html">next part</a> I will go through each steps again but with detection in mind.</p>]]></content><author><name>soka</name></author><category term="redteam" /><summary type="html"><![CDATA[In a recent assessment, my teammates and I were tasked to perform a web security review of several applications with the possibility to perform internal pentest if the opportunity came up.]]></summary></entry><entry><title type="html">Increase your stealth capabilities - part 2</title><link href="http://localhost:4000/redteam/2024/01/04/increase-your-stealth-capabilities-part2.html" rel="alternate" type="text/html" title="Increase your stealth capabilities - part 2" /><published>2024-01-04T00:00:00+01:00</published><updated>2024-01-04T00:00:00+01:00</updated><id>http://localhost:4000/redteam/2024/01/04/increase-your-stealth-capabilities-part2</id><content type="html" xml:base="http://localhost:4000/redteam/2024/01/04/increase-your-stealth-capabilities-part2.html"><![CDATA[<p><b><u>Note:</u> This blog post is the second one of the series <i>Increase your stealth capabilities</i>, make sure to have read <a href="/redteam/2024/01/04/increase-your-stealth-capabilities-part1.html">the first part</a>.</b></p>
+
+<h2 id="recap">Recap</h2>
 
 <p>During an engagement my teammates and I compromised a Windows server by uploading a webshell then elevated our privilege to SYSTEM and extracted credentials stored in LSASS.
 <br />
 In Part 1, I replayed the scenario in a lab where an Elastic EDR agent is running and we noticed that a lot of detection raised up.
 <br />
-In this Part 2, I will show how we can increase our stealth capabilities by using open source tool and building our own.</p>
+In this Part 2, I will show how we can increase our stealth capabilities by using open source tools and building our own.</p>
 
 <p><br /></p>
 
 <h2 id="cobalt-strike-modifications">Cobalt Strike modifications</h2>
 
-<p>In order to evade ElasticEDR yara rules, I followed the following Fortra <a href="https://www.cobaltstrike.com/blog/cobalt-strike-and-yara-can-i-have-your-signature">blogpost</a>.</p>
+<p>In order to evade Elastic EDR yara rules, I followed the following Fortra <a href="https://www.cobaltstrike.com/blog/cobalt-strike-and-yara-can-i-have-your-signature">blog post</a>.</p>
 
 <p>Yara rules are pretty easy to evade when you know them… ElasticEDR rules can be found <a href="https://github.com/elastic/protections-artifacts/blob/main/yara/rules/Windows_Trojan_CobaltStrike.yar">here</a>.</p>
 
-<p>I used <a href="https://github.com/xforcered/BokuLoader">BokuLoader</a> (October+ release) to increase evasion capabilities of the Cobalt Strike beacon.
+<p>I used <a href="https://github.com/xforcered/BokuLoader">xforcered/BokuLoader</a> (October+ release) to increase evasion capabilities of the Cobalt Strike beacon.
 This release contains call stack spoofing capabilities that bypass Elastic EDR rules based on call stack analysis. You can learn more about it <a href="https://dtsec.us/2023-09-15-StackSpoofin/">here</a>.</p>
 
 <p>After the User-Defined Reflective Loader included in Cobalt Strike, I made the following changes to the <code class="language-plaintext highlighter-rouge">bokuloader.cna</code> to bypass ElasticEDR yara rules:</p>
@@ -257,16 +259,17 @@ And I got zero detection from Elastic EDR for this step.
 
 <p><br /></p>
 
-<p>Actually there is an universal privilege escalation path when LDAP signature is not enforce (default configuration) on domain controllers but I will make a dedicated blog post on this one later.
+<p>Actually there is an universal privilege escalation path when LDAP signature is not enforced on domain controllers (default configuration) but I will make a dedicated blog post on this one later.
 <br /></p>
 
-<h2 id="privilage-escalation---seimpersonateprivilege">Privilage escalation - SeImpersonatePrivilege</h2>
+<h2 id="privilege-escalation---seimpersonateprivilege">Privilege escalation - SeImpersonatePrivilege</h2>
 
-<p>Few months ago, <a href="https://github.com/Prepouce/CoercedPotato">CoercedPotato</a> was released. CoercedPotato is a C++ program which, like the other Potato exploits, spawn a named pipe (via a RPC interface) to receive a SYSTEM authentication and impersonate it. To coerce the SYSTEM auth, CoercedPotato use MS-EFSR and MS-RPRN functions.</p>
+<p>Few months ago, <a href="https://github.com/Prepouce/CoercedPotato">Prepouce/CoercedPotato</a> was released. CoercedPotato is a C++ program which, like the other Potato exploits, spawn a named pipe (via a RPC interface) to receive a SYSTEM authentication and impersonate it. To coerce the SYSTEM auth, CoercedPotato use MS-EFSR and MS-RPRN functions.</p>
 
-<p>As we don’t want to put and execute anything on the disk, I forked and “converted” CoercedPotato to a Reflective DLL <a href="https://github.com/sokaRepo/CoercedPotatoRDLL">CoercedPotatoRDLL</a>.</p>
+<p>As we don’t want to put and execute anything on the disk, I forked and “converted” CoercedPotato to a Reflective DLL <a href="https://github.com/sokaRepo/CoercedPotatoRDLL">sokaRepo/CoercedPotatoRDLL</a>. You can read about it in a previous <a href="/redteam/2023/10/11/create-reflective-dll-for-cobaltstrike.html" target="_blank">blog post</a>.</p>
 
-<p>When I tested the Reflective DLL, I had the surprise that Elastic EDR recently add a Malicious Bahaviour Detection rule that didn’t exist one or two months before… =)</p>
+<p><br />
+When I tested the Reflective DLL, I had the surprise that Elastic EDR recently added a Malicious Bahaviour Detection rule that didn’t exist one or two months before… =)</p>
 
 <p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20231126114713.png" alt="SeImpersonate detection" /></p>
 
@@ -326,7 +329,7 @@ else
 
 <p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20240102172509.png" alt="new beacon" /></p>
 
-<h2 id="privesc---s4u2self">PrivEsc - S4U2Self</h2>
+<h2 id="privilege-escalation---s4u2self">Privilege escalation - S4U2Self</h2>
 
 <p>Another way to do this is to abuse Kerberos itself.
 As a local service account, when we authenticate with NTLM or Kerberos on another machine, the machine account is used <code class="language-plaintext highlighter-rouge">WEB1$</code>.
@@ -371,7 +374,7 @@ Therefore, the <a href="https://posts.specterops.io/kerberoasting-revisited-d434
 
 <p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20240104105829.png" alt="LSASS denied" /></p>
 
-<p>If we try to use Nanodump, we have the same access issue.</p>
+<p>If we try to use <a href="https://github.com/fortra/nanodump">fortra/nanodump</a>, we have the same access issue.</p>
 
 <p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20240104105810.png" alt="LSASS denied" /></p>
 
@@ -385,7 +388,7 @@ Therefore, the <a href="https://posts.specterops.io/kerberoasting-revisited-d434
 
 <p>Alternatively we can enumerate TGT inside LSA and look for any interesting users (<code class="language-plaintext highlighter-rouge">sadmin</code> is a good candidate in my lab).</p>
 
-<p>To perform the bellow Keberos interactions, I use <a href="https://github.com/RalfHacker/Kerbeus-BOF">Kerbeus-BOF</a> but <a href="https://github.com/wavvs/nanorobeus/">nanorobeus</a> can also be used (Kerbeus-BOF is actually based on nanorobeus).</p>
+<p>To perform the bellow Keberos interactions, I use <a href="https://github.com/RalfHacker/Kerbeus-BOF">RalfHacker/Kerbeus-BOF</a> but <a href="https://github.com/wavvs/nanorobeus/">wavvs/nanorobeus</a> can also be used (Kerbeus-BOF is actually based on nanorobeus).</p>
 
 <p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20240104113937.png" alt="TGT enum" /></p>
 
@@ -409,15 +412,16 @@ Therefore, the <a href="https://posts.specterops.io/kerberoasting-revisited-d434
 
 <p>From here, we can act on behalf of <code class="language-plaintext highlighter-rouge">sadmin</code> user and try to move laterally in the network.
 <br /></p>
+
 <h2 id="conclusion">Conclusion</h2>
 
-<p>In this second part we saw how we can increase our stealth by using amazing open source tools such as BokuLoader.</p>
+<p>In this second part we saw how we can increase our stealth and prevent Elastic EDR to spot us by using amazing open source tools such as BokuLoader.</p>
 
 <p>To avoid executing .NET assembly in memory, we used C++ tool CoercedPotato and modify it to be a Reflective DLL in order to be able to load it in memory with Cobalt Strike.</p>
 
-<p>For credentials dumping, we can use nanodump of Fortra to dump LSASS process to avoid detection. If we want to avoid touching LSASS, we show how Kerberos tickets can be extracted or generated by stealing Windows tokens.</p>]]></content><author><name>soka</name></author><category term="redteam" /><summary type="html"><![CDATA[Recap]]></summary></entry><entry><title type="html">Create Reflective DLL for Cobalt Strike</title><link href="https://sokarepo.github.io//redteam/2023/10/11/create-reflective-dll-for-cobaltstrike.html" rel="alternate" type="text/html" title="Create Reflective DLL for Cobalt Strike" /><published>2023-10-11T00:00:00+02:00</published><updated>2023-10-11T00:00:00+02:00</updated><id>https://sokarepo.github.io//redteam/2023/10/11/create-reflective-dll-for-cobaltstrike</id><content type="html" xml:base="https://sokarepo.github.io//redteam/2023/10/11/create-reflective-dll-for-cobaltstrike.html"><![CDATA[<h2 id="context">Context</h2>
+<p>For credentials dumping, we can use nanodump of Fortra to dump LSASS process to avoid detection. If we want to avoid touching LSASS, we show how Kerberos tickets can be extracted or generated by stealing Windows tokens.</p>]]></content><author><name>soka</name></author><category term="redteam" /><summary type="html"><![CDATA[Note: This blog post is the second one of the series Increase your stealth capabilities, make sure to have read the first part.]]></summary></entry><entry><title type="html">Create Reflective DLL for Cobalt Strike</title><link href="http://localhost:4000/redteam/2023/10/11/create-reflective-dll-for-cobaltstrike.html" rel="alternate" type="text/html" title="Create Reflective DLL for Cobalt Strike" /><published>2023-10-11T00:00:00+02:00</published><updated>2023-10-11T00:00:00+02:00</updated><id>http://localhost:4000/redteam/2023/10/11/create-reflective-dll-for-cobaltstrike</id><content type="html" xml:base="http://localhost:4000/redteam/2023/10/11/create-reflective-dll-for-cobaltstrike.html"><![CDATA[<h2 id="context">Context</h2>
 
-<p>This blog post aims to solve a problem I faced when using opensource tooling with Cobalt Strike.</p>
+<p>This blog post aims to solve a problem I faced when using open source tooling with Cobalt Strike.</p>
 
 <p>During my security assessments I often rely on tooling developped in Python, C#, Go or C/C++.
 Opensource tools are very often built to produce a PE file that doesn’t fit well on red team engagement as we prefer to avoid uploading and executing file on disk.
@@ -610,7 +614,7 @@ Two months ago, <a href="https://github.com/Prepouce/CoercedPotato">CoercedPotat
 
 <p>You can find the code on my Github <a href="https://github.com/sokaRepo/CoercedPotatoRDLL">CoercedPotatoRDLL</a>.</p>
 
-<p><img src="/assets/images/redteam/2023-10-11-create-reflective-dll-cobaltstrike/coercedpotato.png" alt="CoercedPotato" /></p>]]></content><author><name>soka</name></author><category term="redteam" /><summary type="html"><![CDATA[Context]]></summary></entry><entry><title type="html">Implement a Blind Error-Based SQLMap payload for SQLite</title><link href="https://sokarepo.github.io//web/2023/08/24/implement-blind-sqlite-sqlmap.html" rel="alternate" type="text/html" title="Implement a Blind Error-Based SQLMap payload for SQLite" /><published>2023-08-24T00:00:00+02:00</published><updated>2023-08-24T00:00:00+02:00</updated><id>https://sokarepo.github.io//web/2023/08/24/implement-blind-sqlite-sqlmap</id><content type="html" xml:base="https://sokarepo.github.io//web/2023/08/24/implement-blind-sqlite-sqlmap.html"><![CDATA[<h2 id="context">Context</h2>
+<p><img src="/assets/images/redteam/2023-10-11-create-reflective-dll-cobaltstrike/coercedpotato.png" alt="CoercedPotato" /></p>]]></content><author><name>soka</name></author><category term="redteam" /><summary type="html"><![CDATA[Context]]></summary></entry><entry><title type="html">Implement a Blind Error-Based SQLMap payload for SQLite</title><link href="http://localhost:4000/web/2023/08/24/implement-blind-sqlite-sqlmap.html" rel="alternate" type="text/html" title="Implement a Blind Error-Based SQLMap payload for SQLite" /><published>2023-08-24T00:00:00+02:00</published><updated>2023-08-24T00:00:00+02:00</updated><id>http://localhost:4000/web/2023/08/24/implement-blind-sqlite-sqlmap</id><content type="html" xml:base="http://localhost:4000/web/2023/08/24/implement-blind-sqlite-sqlmap.html"><![CDATA[<h2 id="context">Context</h2>
 
 <p>Back to 2019, my first HackTheBox box <code class="language-plaintext highlighter-rouge">Intense</code> was released with several steps involved:</p>
 <ul>

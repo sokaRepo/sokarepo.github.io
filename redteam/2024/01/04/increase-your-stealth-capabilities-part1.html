@@ -12,15 +12,15 @@
 <meta property="og:locale" content="en_US" />
 <meta name="description" content="In a recent assessment, my teammates and I were tasked to perform a web security review of several applications with the possibility to perform internal pentest if the opportunity came up." />
 <meta property="og:description" content="In a recent assessment, my teammates and I were tasked to perform a web security review of several applications with the possibility to perform internal pentest if the opportunity came up." />
-<link rel="canonical" href="https://sokarepo.github.io//redteam/2024/01/04/increase-your-stealth-capabilities-part1.html" />
-<meta property="og:url" content="https://sokarepo.github.io//redteam/2024/01/04/increase-your-stealth-capabilities-part1.html" />
+<link rel="canonical" href="http://localhost:4000/redteam/2024/01/04/increase-your-stealth-capabilities-part1.html" />
+<meta property="og:url" content="http://localhost:4000/redteam/2024/01/04/increase-your-stealth-capabilities-part1.html" />
 <meta property="og:site_name" content="sokarepo" />
 <meta property="og:type" content="article" />
 <meta property="article:published_time" content="2024-01-04T00:00:00+01:00" />
 <meta name="twitter:card" content="summary" />
 <meta property="twitter:title" content="Increase your stealth capabilities - part 1" />
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"soka"},"dateModified":"2024-01-04T00:00:00+01:00","datePublished":"2024-01-04T00:00:00+01:00","description":"In a recent assessment, my teammates and I were tasked to perform a web security review of several applications with the possibility to perform internal pentest if the opportunity came up.","headline":"Increase your stealth capabilities - part 1","mainEntityOfPage":{"@type":"WebPage","@id":"https://sokarepo.github.io//redteam/2024/01/04/increase-your-stealth-capabilities-part1.html"},"url":"https://sokarepo.github.io//redteam/2024/01/04/increase-your-stealth-capabilities-part1.html"}</script>
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"soka"},"dateModified":"2024-01-04T00:00:00+01:00","datePublished":"2024-01-04T00:00:00+01:00","description":"In a recent assessment, my teammates and I were tasked to perform a web security review of several applications with the possibility to perform internal pentest if the opportunity came up.","headline":"Increase your stealth capabilities - part 1","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/redteam/2024/01/04/increase-your-stealth-capabilities-part1.html"},"url":"http://localhost:4000/redteam/2024/01/04/increase-your-stealth-capabilities-part1.html"}</script>
 <!-- End Jekyll SEO tag -->
 
 
@@ -125,15 +125,15 @@ The next step of our exploitation was to escalate our privileges from Local Serv
 
 <h2 id="lsass-dump">LSASS dump</h2>
 
-<p>After we gained NT SYSTEM privileges, we launched the built-in mimikatz command to dump credentials from LSASS.</p>
+<p>After we gained SYSTEM privileges, we launched the built-in mimikatz command to dump credentials from LSASS.</p>
 
 <p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20231009144233.png" alt="logonpasswords" />
 <br /></p>
 
-<p>Which raised:</p>
+<p>Which raised alerts:</p>
 <ul>
   <li><code class="language-plaintext highlighter-rouge">LSASS Process Access via Windows API</code></li>
-  <li>Mimikatz detected from memory</li>
+  <li><code class="language-plaintext highlighter-rouge">Memory Threat Detection Alert: Windows.Hacktool.Mimikatz</code></li>
   <li><code class="language-plaintext highlighter-rouge">LSASS Access Attempt from Unbacked Memory</code></li>
 </ul>
 
@@ -143,14 +143,14 @@ The next step of our exploitation was to escalate our privileges from Local Serv
 
 <h2 id="conclusion">Conclusion</h2>
 
-<p>As we can saw, there are plenty opportunities to detect our actions during the different phase of the attack path:</p>
+<p>As we can saw, there are plenty of opportunities to detect our actions during the different phase of the attack path:</p>
 <ul>
   <li>execution of a webshell</li>
   <li>execution of an .NET assembly through execute-assembly</li>
   <li>LSASS dump</li>
 </ul>
 
-<p>In the <a href="https://sokarepo.github.io/redteam/2024/01/04/increase-your-stealth-capabilities-part2.html">next part</a> I will go through each steps again but with detection in mind.</p>
+<p>In the <a href="/redteam/2024/01/04/increase-your-stealth-capabilities-part2.html">next part</a> I will go through each steps again but with detection in mind.</p>
 
 </div>
             </div>
