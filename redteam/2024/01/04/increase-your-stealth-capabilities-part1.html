@@ -79,12 +79,12 @@ The engagement didn’t require us to be stealthy and the goal of this blog post
 <p>And we got our beacon back
 <br /></p>
 
-<p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities-part/Pasted image 20230908164217.png" alt="Cobalt Strike beacon" />
+<p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20230908164217.png" alt="Cobalt Strike beacon" />
 <br /></p>
 
 <p>If we look at the alerts in Elastic EDR, we can see that we were very noisy.</p>
 
-<p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities-part/Pasted image 20230908151601.png" alt="Elastic EDR detections" />
+<p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20230908151601.png" alt="Elastic EDR detections" />
 <br /></p>
 
 <ul>
@@ -114,7 +114,7 @@ The next step of our exploitation was to escalate our privileges from Local Serv
 
 <p>And we got our SYSTEM beacon back.
 <br />
-<img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities-part/Pasted image 20231006103045.png" alt="SYSTEM beacon" />
+<img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20231006103045.png" alt="SYSTEM beacon" />
 <br /></p>
 
 <p>The last action raised the following alerts:</p>
@@ -127,7 +127,7 @@ The next step of our exploitation was to escalate our privileges from Local Serv
 
 <p>After we gained NT SYSTEM privileges, we launched the built-in mimikatz command to dump credentials from LSASS.</p>
 
-<p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities-part/Pasted image 20231009144233.png" alt="logonpasswords" />
+<p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20231009144233.png" alt="logonpasswords" />
 <br /></p>
 
 <p>Which raised:</p>
@@ -138,7 +138,7 @@ The next step of our exploitation was to escalate our privileges from Local Serv
 </ul>
 
 <p><br />
-<img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities-part/Pasted image 20231009160453.png" alt="logonpasswords detection" />
+<img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20231009160453.png" alt="logonpasswords detection" />
 <br /></p>
 
 <h2 id="conclusion">Conclusion</h2>

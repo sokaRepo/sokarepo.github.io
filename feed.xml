@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.2">Jekyll</generator><link href="https://sokarepo.github.io//feed.xml" rel="self" type="application/atom+xml" /><link href="https://sokarepo.github.io//" rel="alternate" type="text/html" /><updated>2024-01-04T15:46:57+01:00</updated><id>https://sokarepo.github.io//feed.xml</id><title type="html">sokarepo</title><subtitle>soka offsec notes | Web, Active Directory and Maldev stuff</subtitle><author><name>soka</name></author><entry><title type="html">Increase your stealth capabilities - part 1</title><link href="https://sokarepo.github.io//redteam/2024/01/04/increase-your-stealth-capabilities-part1.html" rel="alternate" type="text/html" title="Increase your stealth capabilities - part 1" /><published>2024-01-04T00:00:00+01:00</published><updated>2024-01-04T00:00:00+01:00</updated><id>https://sokarepo.github.io//redteam/2024/01/04/increase-your-stealth-capabilities-part1</id><content type="html" xml:base="https://sokarepo.github.io//redteam/2024/01/04/increase-your-stealth-capabilities-part1.html"><![CDATA[<p>In a recent assessment, my teammates and I were tasked to perform a web security review of several applications with the possibility to perform internal pentest if the opportunity came up.</p>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.2">Jekyll</generator><link href="https://sokarepo.github.io//feed.xml" rel="self" type="application/atom+xml" /><link href="https://sokarepo.github.io//" rel="alternate" type="text/html" /><updated>2024-01-04T15:54:47+01:00</updated><id>https://sokarepo.github.io//feed.xml</id><title type="html">sokarepo</title><subtitle>soka offsec notes | Web, Active Directory and Maldev stuff</subtitle><author><name>soka</name></author><entry><title type="html">Increase your stealth capabilities - part 1</title><link href="https://sokarepo.github.io//redteam/2024/01/04/increase-your-stealth-capabilities-part1.html" rel="alternate" type="text/html" title="Increase your stealth capabilities - part 1" /><published>2024-01-04T00:00:00+01:00</published><updated>2024-01-04T00:00:00+01:00</updated><id>https://sokarepo.github.io//redteam/2024/01/04/increase-your-stealth-capabilities-part1</id><content type="html" xml:base="https://sokarepo.github.io//redteam/2024/01/04/increase-your-stealth-capabilities-part1.html"><![CDATA[<p>In a recent assessment, my teammates and I were tasked to perform a web security review of several applications with the possibility to perform internal pentest if the opportunity came up.</p>
 
 <p>On one of the application, we successfully uploaded a aspx webshell which executes Windows cmd.
 The engagement didn’t require us to be stealthy and the goal of this blog post is to reproduce our what we did with Elastic EDR watching us.</p>
@@ -14,12 +14,12 @@ The engagement didn’t require us to be stealthy and the goal of this blog post
 <p>And we got our beacon back
 <br /></p>
 
-<p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities-part/Pasted image 20230908164217.png" alt="Cobalt Strike beacon" />
+<p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20230908164217.png" alt="Cobalt Strike beacon" />
 <br /></p>
 
 <p>If we look at the alerts in Elastic EDR, we can see that we were very noisy.</p>
 
-<p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities-part/Pasted image 20230908151601.png" alt="Elastic EDR detections" />
+<p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20230908151601.png" alt="Elastic EDR detections" />
 <br /></p>
 
 <ul>
@@ -49,7 +49,7 @@ The next step of our exploitation was to escalate our privileges from Local Serv
 
 <p>And we got our SYSTEM beacon back.
 <br />
-<img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities-part/Pasted image 20231006103045.png" alt="SYSTEM beacon" />
+<img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20231006103045.png" alt="SYSTEM beacon" />
 <br /></p>
 
 <p>The last action raised the following alerts:</p>
@@ -62,7 +62,7 @@ The next step of our exploitation was to escalate our privileges from Local Serv
 
 <p>After we gained NT SYSTEM privileges, we launched the built-in mimikatz command to dump credentials from LSASS.</p>
 
-<p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities-part/Pasted image 20231009144233.png" alt="logonpasswords" />
+<p><img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20231009144233.png" alt="logonpasswords" />
 <br /></p>
 
 <p>Which raised:</p>
@@ -73,7 +73,7 @@ The next step of our exploitation was to escalate our privileges from Local Serv
 </ul>
 
 <p><br />
-<img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities-part/Pasted image 20231009160453.png" alt="logonpasswords detection" />
+<img src="/assets/images/redteam/2024-01-04-increase-your-stealth-capabilities/Pasted image 20231009160453.png" alt="logonpasswords detection" />
 <br /></p>
 
 <h2 id="conclusion">Conclusion</h2>
