@@ -5,7 +5,7 @@ categories: [ "Malware Development" ]
 tags: [ "research", "command and control", "windows", "edr", "tooling", "detection", "elastic" ]     # TAG names should always be lowercase
 ---
 
-*Note:* This blog post is the second one of the series Increase your stealth capabilities, make sure to have read [the first part](posts/increase-stealth-capabilities-part1/).
+***Note:*** This blog post is the second one of the series Increase your stealth capabilities, make sure to have read [the first part](/posts/increase-stealth-capabilities-part1/).
 
 ## Recap
 
